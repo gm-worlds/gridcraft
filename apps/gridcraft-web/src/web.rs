@@ -62,6 +62,7 @@ pub fn start() {
                     if let Some(bridge) = &app_bridge {
                         bridge.connect(&mut services, inbox.clone(), cc.egui_ctx.clone());
                     }
+                    let collab = app_bridge.as_ref().and_then(|_| crate::collab::Link::connect(cc.egui_ctx.clone()));
                     let mut app = SheetApp::new(session, services);
                     app.ui.system_theme = true;
                     // `?chrome=none|notitlebar|nofiletab`: a host that embeds the sheet in its own window and owns the files
@@ -99,8 +100,11 @@ pub fn start() {
                         }
                         bridge.post_ready();
                     }
+                    if let Some(link) = &collab {
+                        link.borrow().post_hello();
+                    }
                     crate::api::install(&mut app, cc.egui_ctx.clone());
-                    Ok(Box::new(WebShell { app, inbox, bridge: app_bridge, prefs }))
+                    Ok(Box::new(WebShell { app, inbox, bridge: app_bridge, prefs, collab }))
                 }),
             )
             .await;
@@ -129,6 +133,8 @@ struct WebShell {
     inbox: Inbox,
     bridge: Option<crate::host::Bridge>,
     prefs: crate::prefs::PrefsSync,
+    /// Live co-editing with the host page (Taskforce patch, [`crate::collab`]).
+    collab: Option<std::rc::Rc<std::cell::RefCell<crate::collab::Link>>>,
 }
 
 fn local_storage() -> Option<web_sys::Storage> {
@@ -181,6 +187,10 @@ impl eframe::App for WebShell {
 
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         self.app.ui(ui);
+        if let Some(link) = &self.collab {
+            let ctx = ui.ctx().clone();
+            link.borrow_mut().frame(&mut self.app, &ctx);
+        }
         if let Some(bridge) = &self.bridge {
             bridge.sync(&mut self.app);
         }
