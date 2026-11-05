@@ -37,6 +37,8 @@ pub struct Bridge {
     saved: Rc<RefCell<Vec<String>>>,
     /// The unsaved-changes state last reported to the parent.
     reported: Rc<Cell<Option<bool>>>,
+    /// Live co-editing with the parent (Taskforce patch, [`crate::collab`]).
+    collab: Rc<RefCell<Option<Rc<RefCell<crate::collab::Link>>>>>,
 }
 
 impl Bridge {
@@ -48,12 +50,13 @@ impl Bridge {
             return None;
         }
         let origin = window.location().origin().ok()?;
-        Some(Self { window, parent, origin, saved: Rc::default(), reported: Rc::default() })
+        Some(Self { window, parent, origin, saved: Rc::default(), reported: Rc::default(), collab: Rc::default() })
     }
 
     /// Send saved and exported files to the parent instead of downloading them, and hear files
     /// from it.
     pub fn connect(&self, services: &mut Services, inbox: Inbox, ctx: egui::Context) {
+        *self.collab.borrow_mut() = crate::collab::Link::connect(ctx.clone());
         self.listen(inbox, ctx);
         let bridge = self.clone();
         services.download = Some(Box::new(move |name: &str, bytes: &[u8]| {
@@ -73,6 +76,9 @@ impl Bridge {
 
     pub fn post_ready(&self) {
         self.send(&[("type", "gridcraft:ready".into()), ("version", env!("CARGO_PKG_VERSION").into())]);
+        if let Some(link) = self.collab.borrow().as_ref() {
+            link.borrow().post_hello();
+        }
     }
 
     pub fn post_failed(&self, error: &str) {
@@ -81,7 +87,10 @@ impl Bridge {
 
     /// After each frame: a workbook handed to the parent this frame counts as saved under the
     /// name it was saved as, and the parent hears when unsaved changes appear or go away.
-    pub fn sync(&self, app: &mut SheetApp) {
+    pub fn sync(&self, app: &mut SheetApp, ctx: &egui::Context) {
+        if let Some(link) = self.collab.borrow().as_ref() {
+            link.borrow_mut().frame(app, ctx);
+        }
         let saved = std::mem::take(&mut *self.saved.borrow_mut());
         if let Some(name) = saved.iter().rev().find(|name| is_workbook(name))
             && let Some(doc) = app.session.active_mut()

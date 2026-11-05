@@ -178,7 +178,8 @@ impl eframe::App for WebShell {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         self.app.ui(ui);
         if let Some(bridge) = &self.bridge {
-            bridge.sync(&mut self.app);
+            let ctx = ui.ctx().clone();
+            bridge.sync(&mut self.app, &ctx);
         }
     }
 }

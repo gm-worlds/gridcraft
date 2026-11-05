@@ -11,6 +11,7 @@ pub mod cf;
 mod chart_svg;
 mod clip_html;
 pub mod cmd;
+pub mod collab;
 pub mod display;
 pub mod fill;
 pub mod io;
@@ -531,6 +532,8 @@ pub struct Session {
     /// Measures cell text for AutoFit Column Width. Without it (CLI, MCP) AutoFit uses
     /// [`cmd::format::approx_text_width`].
     pub text_width: Option<TextWidth>,
+    /// Live co-editing of one workbook ([`collab`]), when a host turned it on.
+    pub collab: Option<collab::Collab>,
 }
 
 impl Session {
@@ -688,6 +691,17 @@ impl Session {
             return Err(EngineError::Disabled(id.to_string(), macros::debug::BUSY.into()));
         }
         let before = self.active().map(|d| (d.uid, d.wb.clone(), d.selection.clone()));
+        // Co-editing: a top-level command that changes something effects can't carry is put back
+        // (workbook, selection and history) when it ends.
+        let collab_before = (self.depth == 0 && !query && self.collab.is_some())
+            .then(|| {
+                self.collab
+                    .as_ref()
+                    .and_then(|c| self.docs.iter().find(|d| d.uid == c.doc))
+                    .map(|d| (d.wb.clone(), d.selection.clone(), d.undo.clone(), d.redo.clone()))
+            })
+            .flatten();
+        let journal_len = self.journal.len();
         // A dry run inside this command that a panic cuts short leaves journaling paused and its
         // touch log open; the panic branch puts both back.
         let paused_before = self.journal_paused;
@@ -882,6 +896,30 @@ impl Session {
             self.group_step = None;
         } else if let Some(uid) = doc_uid {
             self.bound_tail(uid);
+        }
+        if self.depth == 0
+            && self.collab.is_some()
+            && let Err(what) = collab::observe(self)
+        {
+            if let Some((wb, sel, undo, redo)) = collab_before
+                && let Some(c) = self.collab.as_ref()
+                && let Some(d) = self.docs.iter_mut().find(|d| d.uid == c.doc)
+            {
+                d.wb = wb;
+                d.selection = sel;
+                d.undo = undo;
+                d.redo = redo;
+                d.calc.rebuild(&d.wb);
+                d.revision += 1;
+            } else {
+                collab::revert(self);
+            }
+            self.truncate_journal(journal_len.min(self.journal.len()));
+            let why = format!("{} ({what})", collab::NOT_YET);
+            if let Some(c) = self.collab.as_mut() {
+                c.refused = Some(why.clone());
+            }
+            return Err(EngineError::Disabled(id.to_string(), why));
         }
         result
     }

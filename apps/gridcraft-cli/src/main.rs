@@ -42,7 +42,7 @@ const USAGE: &str = "usage:
   gridcraft-cli check <file-or-dir>... [--json] [--tolerance 1e-9] [--max-report N]
                      cached-value calc oracle + XLSX round-trip fidelity (exit 1 on any difference)
   gridcraft-cli run [--in FILE | --sample NAME] [--cmd 'id={json}']... [--script FILE.jsonl]
-                     [--out FILE] [--print RANGE] [--quiet]
+                     [--out FILE] [--print RANGE] [--quiet] [--hash]
                      a script line is id={json} or {\"command\": \"id\", \"params\": {…}};
                      blank lines and lines starting with # or // are skipped
   gridcraft-cli commands [--json] [--search X]
@@ -412,7 +412,7 @@ fn parse_command(text: &str) -> Result<Option<(String, Value)>, String> {
 }
 
 fn run(args: &[String]) -> Result<(), String> {
-    let a = Args::parse(args, &["in", "sample", "cmd", "script", "out", "print", "sheet"], &["quiet", "csv", "formulas"])?;
+    let a = Args::parse(args, &["in", "sample", "cmd", "script", "out", "print", "sheet"], &["quiet", "csv", "formulas", "hash"])?;
     a.no_extra(0)?;
     let mut s = match (a.opt("in"), a.opt("sample")) {
         (Some(_), Some(_)) => return Err("give --in or --sample, not both".into()),
@@ -448,6 +448,13 @@ fn run(args: &[String]) -> Result<(), String> {
                 outln!("{}", serde_json::to_string(&json!({"command": id, "result": r})).unwrap_or_default());
             }
         }
+    }
+    // The co-editing content hash (Taskforce patch): equal to what the web build reports for the
+    // same workbook, for the native/wasm parity check.
+    if a.has("hash")
+        && let Some(d) = s.active()
+    {
+        outln!("{:016x}", gridcraft_engine::collab::content_hash(&d.wb));
     }
     if let Some(out) = a.opt("out") {
         let r = exec(&mut s, "file.save", json!({"path": out}))?;
