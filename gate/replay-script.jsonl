@@ -1,0 +1,23 @@
+cell.set={"cell":"F1","input":"Notes"}
+cell.set={"cell":"F2","input":"=B2*1.21"}
+range.setValues={"range":"A6","values":[["Boxes",400,450,"=SUM(B6:C6)"],["Dice",120,90,"=SUM(B7:C7)"]]}
+home.bold={"range":"A1:D1"}
+home.fillColor={"range":"A6:D7","color":"#FFF2CC"}
+home.borders={"range":"A1:D7","preset":"all"}
+home.fontColor={"range":"D2:D7","color":"#C00000"}
+home.numberFormat={"range":"B2:D7","format":"Currency"}
+home.insertRows={"rows":"3:3"}
+cell.set={"cell":"A3","input":"Inserted"}
+home.insertColumns={"cols":"B:B"}
+cell.set={"cell":"B1","input":"Code"}
+data.sort={"range":"A2:E8","keys":[{"column":"C","order":"desc"}]}
+edit.fillSeries={"range":"B2:B8","type":"linear","step":1}
+cell.set={"cell":"B2","input":"100"}
+edit.fillSeries={"range":"B2:B8","type":"linear","step":5}
+home.mergeCenter={"range":"A10:C10"}
+cell.set={"cell":"A10","input":"Merged title"}
+home.deleteColumns={"cols":"F:F"}
+home.insertSheet={"name":"Summary"}
+cell.set={"cell":"A1","input":"=SUM(Budget!E2:E8)","sheet":"Summary"}
+sheet.rename={"sheet":"Budget","name":"Costs"}
+cell.set={"cell":"A2","input":"=Costs!A2","sheet":"Summary"}
