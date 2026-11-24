@@ -43,6 +43,7 @@ pub use gridcraft_formula as formula;
 pub use gridcraft_math as math;
 pub use gridcraft_model as model;
 pub use gridcraft_numfmt as numfmt;
+pub use gridcraft_tf_ext as tf_ext;
 pub use selection::Selection;
 pub use windows::{Target, TargetGuard, WindowState, WindowView};
 
@@ -551,6 +552,8 @@ pub struct Session {
     pub text_width: Option<TextWidth>,
     /// Live co-editing of one workbook ([`collab`]), when a host turned it on.
     pub collab: Option<collab::Collab>,
+    /// The host opened the workbook read-only (`cmd::tf::READ_ONLY`): commands that change it are refused.
+    pub tf_read_only: bool,
 }
 
 impl Session {
@@ -692,6 +695,7 @@ impl Session {
         if let Err(why) = (spec.enabled)(self) {
             return Err(EngineError::Disabled(id.to_string(), why));
         }
+        cmd::tf::guard_read_only(self, spec)?;
         // A debugger whose undo group something else ended locks nothing any more (`macro.debug`
         // itself says that the run had ended).
         if id != "macro.debug" {

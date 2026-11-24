@@ -12,6 +12,19 @@ use serde_json::{Value as Json, json};
 use super::{CommandSpec, bad, cell_param_on, cmd, edit, has_doc, str_param, target_ranges, target_sheet};
 use crate::{Result, Session};
 
+/// Why a command was refused in a workbook the host opened read-only.
+pub const READ_ONLY: &str = "This workbook is open read-only";
+
+/// Refuses a command that would change a workbook the host opened read-only. Looking around,
+/// selecting, view settings, copying and opening stay available; undo and redo are refused with
+/// the rest, as there is nothing of this person's to undo.
+pub(crate) fn guard_read_only(s: &Session, spec: &CommandSpec) -> Result<()> {
+    if s.tf_read_only && (spec.undoable || matches!(spec.id, "edit.undo" | "edit.redo" | "edit.cut" | "file.save" | "file.saveAs")) {
+        return Err(crate::EngineError::Disabled(spec.id.to_string(), READ_ONLY.into()));
+    }
+    Ok(())
+}
+
 /// Most cells one command marks.
 const MAX_CELLS: u64 = 100_000;
 
@@ -159,6 +172,30 @@ mod tests {
         s.execute("tf.kind.clear", json!({ "range": "A1:B9" })).unwrap();
         assert_eq!(fmt(&mut s, "A1"), "General");
         assert_eq!(s.execute("cell.get", json!({ "cell": "A1" })).unwrap()["value"], 5.0);
+    }
+
+    #[test]
+    fn read_only_refuses_changes_and_keeps_looking_around() {
+        let mut s = Session::new();
+        s.execute("file.new", json!({})).unwrap();
+        s.execute("cell.set", json!({ "cell": "A1", "input": "kept" })).unwrap();
+        s.tf_read_only = true;
+        for (id, p) in [
+            ("cell.set", json!({ "cell": "A1", "input": "x" })),
+            ("home.bold", json!({ "range": "A1" })),
+            ("tf.kind.set", json!({ "range": "A1", "kind": "rating" })),
+            ("edit.undo", json!({})),
+            ("edit.clearContents", json!({ "range": "A1" })),
+            ("file.save", json!({})),
+        ] {
+            let e = s.execute(id, p).unwrap_err().to_string();
+            assert!(e.contains(super::READ_ONLY), "{id}: {e}");
+        }
+        assert_eq!(s.execute("cell.get", json!({ "cell": "A1" })).unwrap()["value"], "kept");
+        s.execute("selection.set", json!({ "cell": "C3" })).unwrap();
+        s.execute("edit.copy", json!({ "range": "A1" })).unwrap();
+        s.tf_read_only = false;
+        s.execute("cell.set", json!({ "cell": "A1", "input": "x" })).unwrap();
     }
 
     #[test]
