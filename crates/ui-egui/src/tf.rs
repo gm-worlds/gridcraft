@@ -217,7 +217,7 @@ fn month_shape(sys: DateSystem, year: i32, month: u32) -> Option<(u32, u32)> {
 
 /// Where the calendar button sits in a date cell.
 fn date_button(rect: Rect, z: f32) -> Rect {
-    let side = (13.0 * z).min(rect.height() - 4.0).max(4.0);
+    let side = (11.0 * z).min(rect.height() - 4.0).max(4.0);
     Rect::from_center_size(pos2(rect.right() - 3.0 * z - side / 2.0, rect.center().y), vec2(side, side))
 }
 
@@ -237,14 +237,14 @@ fn paint_date(p: &Painter, rect: Rect, z: f32, text: &str) {
         return;
     }
     // A day always fits: the text shrinks before it would be cut (never `####`).
-    let avail = (button.left() - rect.left() - 5.0 * z).max(1.0);
+    let avail = (button.left() - rect.left() - 4.0 * z).max(1.0);
     let mut size = (11.0 * z * 1.25).clamp(6.0, 26.0);
     let mut galley = p.layout_no_wrap(text.to_string(), FontId::proportional(size), SHEET_INK);
     if galley.size().x > avail {
         size = (size * avail / galley.size().x).max(5.0);
         galley = p.layout_no_wrap(text.to_string(), FontId::proportional(size), SHEET_INK);
     }
-    p.galley(pos2(rect.left() + 3.0 * z, rect.center().y - galley.size().y / 2.0), galley, SHEET_INK);
+    p.galley(pos2(rect.left() + 2.0 * z, rect.center().y - galley.size().y / 2.0), galley, SHEET_INK);
 }
 
 /// The calendar of the date cell whose button was clicked: a month to pick a day from, with

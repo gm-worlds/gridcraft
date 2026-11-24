@@ -317,6 +317,19 @@ mod tests {
     }
 
     #[test]
+    fn a_read_only_workbook_takes_no_draft() {
+        let mut app = app_with("kept");
+        app.session.tf_read_only = true;
+        app.begin_edit(Some("7".into()), false);
+        assert!(app.editor.is_none(), "typing must not open a draft that can never be entered");
+        app.begin_edit(None, true);
+        assert!(app.editor.is_none());
+        app.session.tf_read_only = false;
+        app.begin_edit(Some("7".into()), false);
+        assert!(app.editor.is_some());
+    }
+
+    #[test]
     fn typing_over_a_cell_starts_plain_and_formulas_are_left_alone() {
         let ctx = egui::Context::default();
         let mut app = app_with("Old text");

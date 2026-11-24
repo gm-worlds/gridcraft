@@ -14,6 +14,10 @@ impl SheetApp {
         if from_formula_bar && formula_bar::active_spill_anchor(self).is_some() {
             return;
         }
+        // A workbook the host opened read-only takes no draft: one could never be entered.
+        if self.session.tf_read_only {
+            return;
+        }
         if let Err(e) = self.commit_text_box_edit() {
             self.message = Some(("Text Box".into(), clean_error(&e)));
             return;
@@ -293,7 +297,7 @@ impl SheetApp {
     /// yet for a cell that isn't a Python cell. A cell inside a spill isn't edited, as with the
     /// formula bar's other entry paths.
     pub fn begin_python_edit(&mut self) {
-        if formula_bar::active_spill_anchor(self).is_some() {
+        if formula_bar::active_spill_anchor(self).is_some() || self.session.tf_read_only {
             return;
         }
         if let Err(e) = self.commit_text_box_edit() {
