@@ -227,14 +227,16 @@ impl SheetApp {
             // File tab: the Backstage view replaces everything below the title bar.
             backstage::show(self, ui);
         } else {
-            ribbon::show(self, ui);
+            if !crate::tf::layout::compact() {
+                ribbon::show(self, ui);
+            }
             widgets::notice_bar(self, ui);
             // Python mode edits only in the formula bar: it shows while a Python edit is open,
             // also when the preference hides it.
             if self.session.prefs.formula_bar || self.editor.as_ref().is_some_and(|e| e.python) {
                 formula_bar::show(self, ui);
             }
-            if self.ui.status_bar {
+            if self.ui.status_bar && !crate::tf::layout::compact() {
                 tabs::status_bar(self, ui);
             }
             tabs::sheet_tabs(self, ui);

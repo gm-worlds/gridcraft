@@ -93,6 +93,12 @@ pub fn cell_items(app: &mut SheetApp, ui: &mut egui::Ui) -> bool {
     chosen
 }
 
+/// Opens the options dialog for a new multi-select set on the selected cells, as "Turn Into
+/// Multi-select…" in the cell menu does. For a host's own toolbar.
+pub fn open_new_options() {
+    open_options(None);
+}
+
 fn open_options(editing: Option<(String, String)>) {
     let (editing, text) = match editing {
         Some((set, text)) => (Some(set), text),

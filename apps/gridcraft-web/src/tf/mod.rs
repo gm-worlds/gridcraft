@@ -14,7 +14,8 @@
 //!
 //! Methods: `tf.hello`, `tf.features`, `tf.goto {cell, sheet?}`, `tf.cellRect {cell}`,
 //! `tf.save {}` (the save the Save button does, without a key press), `tf.readOnly {on}`,
-//! `tf.theme {dark?, accent?, radius?}`, `tf.rich.toggle {prop}`; any other name is a control method (`cell.get`, `sheet.read`,
+//! `tf.theme {dark?, accent?, radius?}`, `tf.rich.toggle {prop}`, `tf.layout {compact}`,
+//! `tf.kind.options {}`; any other name is a control method (`cell.get`, `sheet.read`,
 //! `engine.execute`…, see `docs/control-protocol.md`).
 
 pub mod proto;
@@ -229,6 +230,22 @@ mod link {
                 ctx.request_repaint();
                 let accent = theme::accent().map(|[r, g, b]| format!("{r:02x}{g:02x}{b:02x}"));
                 Ok(json!({ "dark": app.ui.dark, "accent": accent, "radius": theme::radius() }))
+            }
+            // A phone-sized host draws its own toolbar: no ribbon and no status bar while `compact`.
+            "tf.layout" => {
+                let compact = p.get("compact").and_then(Json::as_bool).ok_or("missing `compact`")?;
+                gridcraft_ui_egui::tf::layout::set_compact(compact);
+                ctx.request_repaint();
+                Ok(json!({ "compact": compact }))
+            }
+            // "Turn Into Multi-select…" from the host's toolbar: the options dialog on the selected cells.
+            "tf.kind.options" => {
+                if app.session.tf_read_only {
+                    return Err("the workbook is read-only".to_string());
+                }
+                gridcraft_ui_egui::tf::menu::open_new_options();
+                ctx.request_repaint();
+                Ok(Json::Null)
             }
             // Bold, italic, underline or strikethrough from the host's own toolbar: on the text
             // selected in the cell being edited, or else on the selected cells.

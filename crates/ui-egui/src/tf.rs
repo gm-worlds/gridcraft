@@ -2,6 +2,7 @@
 //! click on it does. The grid calls [`draws`], [`paint`] and [`click`] from one line each; all the
 //! rules live here.
 
+pub mod layout;
 pub mod menu;
 pub mod rich_edit;
 pub mod theme;
