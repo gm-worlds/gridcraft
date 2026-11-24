@@ -57,6 +57,72 @@ pub fn runs_of(si: &El, base: &str) -> Vec<RichRun> {
     normalize_runs(base, runs)
 }
 
+/// True when every character of the item sits in a run with run properties: then the runs say
+/// how the whole text looks and the cell's own font says nothing about it. LibreOffice writes
+/// items this way, and makes the cell's font that of the first run.
+pub fn fully_formatted(si: &El) -> bool {
+    let mut any = false;
+    for c in &si.children {
+        match c.name.as_str() {
+            "t" if !c.text.is_empty() => return false,
+            "r" => {
+                if c.child("rPr").is_none() && c.kids("t").any(|t| !t.text.is_empty()) {
+                    return false;
+                }
+                any = true;
+            }
+            _ => {}
+        }
+    }
+    any
+}
+
+/// Cells whose text is formatted throughout by its runs (`texts`, [`fully_formatted`]) lose the
+/// bold, italic, underline, strike and colour of their own font. GridCraft draws a run's
+/// formatting on top of the cell's font; in the file a run's font replaces it. Without this a
+/// workbook saved by LibreOffice, with part of a text bold, came back with the whole text bold.
+pub fn settle_cell_fonts(wb: &mut gridcraft_model::Workbook, texts: &[String]) {
+    use gridcraft_core::Value;
+    use gridcraft_model::{Color, Underline};
+    if texts.is_empty() {
+        return;
+    }
+    let texts: std::collections::HashSet<&str> = texts.iter().map(String::as_str).collect();
+    for si in 0..wb.sheets.len() {
+        let mut changes = Vec::new();
+        if let Some(sh) = wb.sheets.get(si) {
+            for (at, cell) in sh.cells.iter() {
+                let Value::Text(t) = &cell.value else { continue };
+                if cell.formula.is_some() || !texts.contains(t.as_ref()) || wb.rich.runs(t).is_empty() {
+                    continue;
+                }
+                let style = wb.styles.get(cell.style);
+                let f = &style.font;
+                if !(f.bold || f.italic || f.strike || f.underline != Underline::None || f.color != Color::Auto) {
+                    continue;
+                }
+                let mut plain = style.clone();
+                plain.font.bold = false;
+                plain.font.italic = false;
+                plain.font.strike = false;
+                plain.font.underline = Underline::None;
+                plain.font.color = Color::Auto;
+                changes.push((at, plain));
+            }
+        }
+        if changes.is_empty() {
+            continue;
+        }
+        let ids: Vec<_> = changes.into_iter().map(|(at, style)| (at, wb.styles.intern(style))).collect();
+        if let Some(sh) = wb.sheets.get_mut(si) {
+            let sh = std::sync::Arc::make_mut(sh);
+            for (at, id) in ids {
+                sh.set_style(at, id);
+            }
+        }
+    }
+}
+
 fn rpr(r: &RichRun) -> String {
     let mut s = String::from("<rPr>");
     for (is_on, tag) in [(r.bold, "<b/>"), (r.italic, "<i/>"), (r.strike, "<strike/>"), (r.underline, "<u/>")] {
@@ -118,6 +184,40 @@ mod tests {
             Ok(())
         })?;
         got.ok_or_else(|| "no si".into())
+    }
+
+    #[test]
+    fn runs_that_format_the_whole_text_overrule_the_cells_font() -> Result<(), Box<dyn std::error::Error>> {
+        use gridcraft_core::{CellRef, Value};
+        use gridcraft_model::{Cell, Color, Sheet, Style, Workbook};
+        // As LibreOffice writes "Ship by Friday" with "Ship" bold: every run has properties.
+        let throughout = parse("<si><r><rPr><b/><sz val=\"11\"/></rPr><t>Ship</t></r><r><rPr><sz val=\"11\"/></rPr><t> by Friday</t></r></si>")?;
+        assert!(fully_formatted(&throughout));
+        // As GridCraft writes it: the plain part has none and takes the cell's font.
+        assert!(!fully_formatted(&parse("<si><r><rPr><b/></rPr><t>Ship</t></r><r><t> by Friday</t></r></si>")?));
+        assert!(!fully_formatted(&parse("<si><t>Ship by Friday</t></si>")?));
+
+        let mut wb = Workbook::new();
+        let mut bold = Style::default();
+        bold.font.bold = true;
+        bold.font.color = Color::Rgb(0x00C8_0000);
+        bold.font.size = 14.0;
+        let bold_id = wb.styles.intern(bold);
+        let cell = |text: &str| Cell { value: Value::Text(text.into()), style: bold_id, ..Cell::default() };
+        let (a1, a2, a3) = (CellRef::parse("A1").ok_or("a1")?, CellRef::parse("A2").ok_or("a2")?, CellRef::parse("A3").ok_or("a3")?);
+        let mut sh = Sheet::new("S");
+        sh.set_cell(a1, cell("Ship by Friday"));
+        sh.set_cell(a2, cell("A bold heading"));
+        sh.set_cell(a3, cell("No runs kept"));
+        wb.sheets = vec![std::sync::Arc::new(sh)];
+        std::sync::Arc::make_mut(&mut wb.rich).set("Ship by Friday", vec![RichRun { start: 0, end: 4, bold: true, ..RichRun::default() }]);
+        settle_cell_fonts(&mut wb, &["Ship by Friday".to_string(), "No runs kept".to_string()]);
+        let font = |at| wb.styles.get(wb.sheets[0].style_id(at)).font.clone();
+        // The cell is no longer bold or red (its runs say what is), and keeps its size.
+        assert!(!font(a1).bold && font(a1).color == Color::Auto && font(a1).size == 14.0);
+        // A cell that is simply bold stays bold, and so does one whose text has no runs.
+        assert!(font(a2).bold && font(a3).bold);
+        Ok(())
     }
 
     #[test]
