@@ -32,6 +32,7 @@ mod interact;
 mod keyboard;
 mod menus;
 mod quadrant;
+mod rich;
 mod selection;
 mod show;
 mod tables;

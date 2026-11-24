@@ -265,7 +265,7 @@ fn paint_cell_decorations(q: &QuadrantPaint<'_>, c: CellRef, rect: Rect, lk: &Lo
         paint_checkbox(p, rect, z, v == Value::Bool(true));
         return true;
     }
-    crate::tf::paint(p, rect, z, lk.style.num_fmt.as_str(), &v, q.tokens.accent)
+    crate::tf::paint(p, rect, z, q.workbook, lk.style.num_fmt.as_str(), &v, q.tokens.accent)
 }
 
 /// Most repeats of a fill character laid out in one cell.
@@ -363,6 +363,7 @@ fn paint_cell(q: &QuadrantPaint<'_>, painted: &(CellRef, Rect, Look, Option<CfLo
         return;
     }
     let color = ncolor.unwrap_or(lk.text_color);
+    let rich = super::rich::Runs::of(wb, &v, &st.font, size);
     let direction = crate::text_direction::cell_direction(st.align.reading_order, &text);
     let halign = match st.align.h {
         HAlign::General => match v {
@@ -381,6 +382,7 @@ fn paint_cell(q: &QuadrantPaint<'_>, painted: &(CellRef, Rect, Look, Option<CfLo
     if !rotated && (st.align.wrap || st.align.h == HAlign::Justify) {
         let wrap_w = (rect.width() - 2.0 * pad - indent).max(4.0);
         let mut job = egui::text::LayoutJob::simple(text.clone(), font.clone(), color, wrap_w);
+        super::rich::restyle(rich.as_ref(), &mut job, color);
         job.direction = direction;
         job.halign_min_is_start = false;
         job.halign = match painted_halign(halign, geo.rtl) {
@@ -413,6 +415,7 @@ fn paint_cell(q: &QuadrantPaint<'_>, painted: &(CellRef, Rect, Look, Option<CfLo
     let font = small.unwrap_or(font);
     let layout = |text: String| {
         let mut job = egui::text::LayoutJob::simple(text, font.clone(), color, f32::INFINITY);
+        super::rich::restyle(rich.as_ref(), &mut job, color);
         job.direction = direction;
         job.halign_min_is_start = false;
         p.layout_job(job)

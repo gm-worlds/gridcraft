@@ -381,6 +381,7 @@ fn show_grid_interactions(app: &mut SheetApp, ui: &mut egui::Ui, resp: &egui::Re
     }
     filter_menu(app, ui, geo, previous_popups.0 == app.grid.filter_menu);
     list_picker(app, ui, geo, previous_popups.1 == app.grid.list_picker);
+    crate::tf::popup(app, ui, geo);
     header_menu(app, ui, previous_popups.2 == app.grid.header_menu);
     context_menu(app, ui);
     fill_menu(app, ui, previous_popups.3 == app.grid.fill_menu);

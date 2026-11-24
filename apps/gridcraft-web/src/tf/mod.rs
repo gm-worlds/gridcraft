@@ -54,6 +54,9 @@ mod link {
         /// The host channel to a same-origin parent page, or `None` when not framed by one.
         pub fn connect(ctx: egui::Context) -> Option<Rc<RefCell<Host>>> {
             let window = web_sys::window()?;
+            // The browser knows the person's time zone: the calendar's "today" is their day.
+            // `getTimezoneOffset` is minutes behind UTC; a non-finite answer becomes 0.
+            gridcraft_ui_egui::tf::set_utc_offset_minutes(-(js_sys::Date::new_0().get_timezone_offset() as i32));
             let parent = window.parent().ok()??;
             if js_sys::Object::is(&parent, &window) {
                 return None;

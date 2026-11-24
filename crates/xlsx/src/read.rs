@@ -20,6 +20,8 @@ pub struct Ctx<'a> {
     pub sst: Vec<Arc<str>>,
     /// Phonetic (furigana) data of the shared strings, one entry per base text.
     pub phonetics: Vec<PhoneticString>,
+    /// Character formatting of the shared strings, by base text.
+    pub rich: gridcraft_model::RichStrings,
     /// Cell format index → model style.
     pub xf_map: Vec<StyleId>,
     pub dxfs: Vec<Style>,
@@ -118,6 +120,7 @@ fn read_shared_strings(cx: &mut Ctx<'_>, wb_rels: &[Rel]) -> Result<(), IoError>
             Some(b) => {
                 let mut sst = Vec::new();
                 let mut phonetics = Vec::new();
+                let mut rich = gridcraft_model::RichStrings::default();
                 let mut dropped = 0usize;
                 let res = xml::parse_streaming(&b, &["si"], &mut |si| {
                     let text = xml::rich_text(&si);
@@ -126,6 +129,10 @@ fn read_shared_strings(cx: &mut Ctx<'_>, wb_rels: &[Rel]) -> Result<(), IoError>
                     dropped += raw.saturating_sub(runs.len());
                     if !runs.is_empty() || props.is_some() {
                         phonetics.push(PhoneticString { text: text.clone(), runs, props });
+                    }
+                    let formatted = crate::rich_text::runs_of(&si, &text);
+                    if !formatted.is_empty() {
+                        rich.set_if_absent(&text, formatted);
                     }
                     sst.push(Arc::from(text));
                     Ok(())
@@ -138,6 +145,7 @@ fn read_shared_strings(cx: &mut Ctx<'_>, wb_rels: &[Rel]) -> Result<(), IoError>
                 }
                 cx.sst = sst;
                 cx.keep_phonetics(phonetics);
+                cx.rich = rich;
             }
             None => cx.warn(format!("missing part {}", r.target)),
         }
@@ -253,6 +261,7 @@ pub fn read_xlsx<'a>(bytes: &'a [u8], opts: crate::ReadOptions<'a>) -> Result<(W
         report: ReadReport::default(),
         sst: vec![],
         phonetics: vec![],
+        rich: gridcraft_model::RichStrings::default(),
         xf_map: vec![],
         dxfs: vec![],
         palette: crate::tables::INDEXED.to_vec(),
@@ -473,6 +482,7 @@ pub fn read_xlsx<'a>(bytes: &'a [u8], opts: crate::ReadOptions<'a>) -> Result<(W
     crate::array_formula::apply_legacy(&mut wb, legacy_formulas, functions);
     wb.styles = cx.styles;
     wb.phonetics = cx.phonetics;
+    wb.rich = Arc::new(cx.rich);
     Ok((wb, cx.report))
 }
 

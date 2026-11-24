@@ -81,6 +81,25 @@ pub struct Effect {
     /// Changed style properties: leaf path → new value.
     #[serde(default, skip_serializing_if = "Map::is_empty")]
     pub style: Map<String, Json>,
+    /// Changed character formatting of a text (rich text). It belongs to the text, not to the
+    /// cell: `cell` is one cell that holds the text, so that a build without rich text reads the
+    /// effect as an ordinary cell effect with nothing in it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rich: Option<RichEffect>,
+}
+
+/// The formatting of one text: every formatted stretch of it (none = plain again).
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct RichEffect {
+    pub text: String,
+    pub runs: Vec<gridcraft_model::RichRun>,
+}
+
+/// The last-writer-wins key of a text's formatting: by text, wherever the effect is anchored.
+fn rich_key(text: &str) -> String {
+    let mut h = Fnv(0xcbf2_9ce4_8422_2325);
+    h.write(text.as_bytes());
+    format!("rich#{:016x}:{}", h.0, text.len())
 }
 
 /// Co-editing state of one open workbook (the session's [`Session::collab`]).
@@ -205,7 +224,10 @@ impl Collab {
             out.input = None;
         }
         out.style.retain(|p, _| !self.pending.contains_key(&format!("{place}#s:{p}")));
-        (out.input.is_some() || !out.style.is_empty()).then_some(out)
+        if out.rich.as_ref().is_some_and(|r| self.pending.contains_key(&rich_key(&r.text))) {
+            out.rich = None;
+        }
+        (out.input.is_some() || !out.style.is_empty() || out.rich.is_some()).then_some(out)
     }
 }
 
@@ -226,6 +248,9 @@ pub fn keys_of(e: &Effect) -> Vec<String> {
     let mut k: Vec<String> = e.style.keys().map(|p| format!("{place}#s:{p}")).collect();
     if e.input.is_some() {
         k.push(format!("{place}#input"));
+    }
+    if let Some(r) = &e.rich {
+        k.push(rich_key(&r.text));
     }
     k
 }
@@ -362,6 +387,13 @@ fn commit_effects(d: &mut DocState, effects: &[Effect]) -> Result<()> {
                         let cur = cx.wb.sheet(si).map(|sh| sh.style_id(at)).unwrap_or_default();
                         let id = patched_style(&mut cx.wb, cur, &e.style)?;
                         cx.sheet_mut(si)?.set_style(at, id);
+                    }
+                    if let Some(r) = &e.rich {
+                        if r.text.len() > MAX_TEXT {
+                            return Err(bad("text too long"));
+                        }
+                        // Normalized by the table; one that is full keeps what it has.
+                        Arc::make_mut(&mut cx.wb.rich).set(&r.text, r.runs.clone());
                     }
                     cx.touch(si, at);
                 }
@@ -519,7 +551,57 @@ fn workbook_rest(wb: &Workbook) -> Workbook {
     w.active_sheet = Default::default();
     w.view = Default::default();
     w.props = Default::default();
+    // Replicated as effects of its own ([`rich_effects`]).
+    w.rich = Default::default();
     w
+}
+
+/// Effects for the texts whose character formatting differs between two workbooks, each anchored
+/// on the first cell of `after` that holds the text. A text no cell holds has nobody to show it
+/// to and is left out.
+fn rich_effects(before: &Workbook, after: &Workbook) -> Vec<Effect> {
+    if Arc::ptr_eq(&before.rich, &after.rich) || before.rich == after.rich {
+        return Vec::new();
+    }
+    let mut changed: std::collections::BTreeMap<&str, Option<(usize, CellRef)>> = std::collections::BTreeMap::new();
+    for (text, runs) in after.rich.iter() {
+        if before.rich.runs(text) != runs {
+            changed.insert(text, None);
+        }
+    }
+    for (text, _) in before.rich.iter() {
+        if after.rich.runs(text).is_empty() {
+            changed.insert(text, None);
+        }
+    }
+    let mut left = changed.len();
+    'sheets: for (si, sh) in after.sheets.iter().enumerate() {
+        let mut cells: Vec<(CellRef, &Cell)> = sh.cells.iter().filter(|(_, c)| matches!(c.value, Value::Text(_)) && c.formula.is_none()).collect();
+        cells.sort_unstable_by_key(|(at, _)| (at.row, at.col));
+        for (at, cell) in cells {
+            let Value::Text(t) = &cell.value else { continue };
+            if let Some(slot @ None) = changed.get_mut(t.as_ref()) {
+                *slot = Some((si, at));
+                left -= 1;
+                if left == 0 {
+                    break 'sheets;
+                }
+            }
+        }
+    }
+    changed
+        .into_iter()
+        .filter_map(|(text, anchor)| {
+            let (si, at) = anchor?;
+            let sheet = after.sheets.get(si)?.name.clone();
+            Some(Effect {
+                sheet,
+                cell: Some(at.a1()),
+                rich: Some(RichEffect { text: text.to_string(), runs: after.rich.runs(text).to_vec() }),
+                ..Default::default()
+            })
+        })
+        .collect()
 }
 
 /// The first JSON key at which two values differ, to name what a refused command changed.
@@ -581,6 +663,8 @@ pub fn diff(before: &Workbook, after: &Workbook) -> std::result::Result<Vec<Effe
             }
         }
     }
+    // After the cells: a text and its formatting set in one step arrive in that order.
+    out.extend(rich_effects(before, after));
     Ok(out)
 }
 
@@ -620,6 +704,15 @@ pub fn content_hash(wb: &Workbook) -> u64 {
             h.write(&at.col.to_le_bytes());
             h.write(input.as_bytes());
             h.write(style.as_bytes());
+            // Formatting inside the text, where there is any (a workbook without rich text hashes
+            // as it did before rich text existed).
+            if let Value::Text(t) = &cell.value {
+                let runs = wb.rich.runs(t);
+                if !runs.is_empty() {
+                    h.write(b"rich");
+                    h.write(serde_json::to_string(runs).unwrap_or_default().as_bytes());
+                }
+            }
         }
         for t in &sh.tables {
             h.write(t.name.as_bytes());
@@ -800,6 +893,56 @@ mod tests {
         assert_eq!(input(&a, "Q1"), "later");
         relay(&mut a, &mut b);
         assert_eq!(hash(&a), hash(&b));
+    }
+
+    #[test]
+    fn formatting_inside_a_text_replicates_and_converges() {
+        let (mut a, mut b) = (session(), session());
+        a.execute("cell.set", json!({"cell": "H2", "input": "Ship by Friday"})).unwrap();
+        a.execute("tf.rich.format", json!({"cell": "H2", "start": 0, "end": 4, "toggle": "bold"})).unwrap();
+        assert!(relay(&mut a, &mut b) >= 1);
+        let runs = |s: &Session| s.doc().unwrap().wb.rich.runs("Ship by Friday").to_vec();
+        assert_eq!(runs(&b).len(), 1);
+        assert_eq!(runs(&a), runs(&b));
+        assert_eq!(hash(&a), hash(&b));
+        // Text and formatting set in one step arrive in order.
+        b.execute("tf.rich.set", json!({"cell": "H3", "text": "New text", "runs": [{"start": 4, "end": 8, "italic": true}]})).unwrap();
+        relay(&mut b, &mut a);
+        assert_eq!(input(&a, "H3"), "New text");
+        assert_eq!(a.doc().unwrap().wb.rich.runs("New text"), b.doc().unwrap().wb.rich.runs("New text"));
+        assert_eq!(hash(&a), hash(&b));
+        // Both format the same text at once: the server's order decides, on both sides.
+        a.execute("tf.rich.format", json!({"cell": "H2", "start": 8, "end": 14, "italic": true})).unwrap();
+        b.execute("tf.rich.format", json!({"cell": "H2", "start": 5, "end": 7, "strike": true})).unwrap();
+        let ea = a.collab.as_mut().unwrap().take_outbox();
+        let eb = b.collab.as_mut().unwrap().take_outbox();
+        for (seq, e) in &ea {
+            b.collab_apply(e).unwrap();
+            a.collab_confirm(*seq);
+        }
+        for (seq, e) in &eb {
+            a.collab_apply(e).unwrap();
+            b.collab_confirm(*seq);
+        }
+        assert_eq!(runs(&a), runs(&b));
+        assert!(runs(&a).iter().any(|r| r.strike), "the later write (b's) is the one kept: {:?}", runs(&a));
+        assert_eq!(hash(&a), hash(&b));
+        // Undo takes the formatting back for both.
+        b.execute("edit.undo", json!({})).unwrap();
+        relay(&mut b, &mut a);
+        assert_eq!(runs(&a), runs(&b));
+        assert_eq!(hash(&a), hash(&b));
+        // A build without rich text reads the effect as a cell effect with nothing in it.
+        let wire = serde_json::to_value(&ea[0].1[0]).unwrap();
+        assert!(wire.get("cell").is_some() && wire.get("rich").is_some() && wire.get("input").is_none(), "{wire}");
+        // A hostile effect cannot store more than a text allows.
+        let long = Effect {
+            sheet: a.doc().unwrap().wb.sheets[0].name.clone(),
+            cell: Some("H9".into()),
+            rich: Some(RichEffect { text: "x".repeat(40_000), runs: vec![] }),
+            ..Default::default()
+        };
+        assert!(a.collab_apply(&[long]).is_err());
     }
 
     #[test]

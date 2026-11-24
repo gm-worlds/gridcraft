@@ -187,10 +187,95 @@ pub fn chip_toggle<S: AsRef<str>>(text: &str, label: &str, options: &[S]) -> Str
     chip_text(&labels)
 }
 
-/// Whether a label can be an option: not empty, no comma (the separator) and no control characters.
+/// Whether a label can be an option: not empty, none of the separators (`,` in a cell, `;` and `|`
+/// in a stored set), no quote (a set is stored as a quoted string) and no control characters.
 pub fn valid_chip_label(label: &str) -> bool {
     let t = label.trim();
-    !t.is_empty() && t.len() <= 80 && !t.contains(',') && !t.chars().any(char::is_control)
+    !t.is_empty() && t.len() <= 80 && !t.contains([',', ';', '|', '"']) && !t.chars().any(char::is_control)
+}
+
+/// Version of the stored form of an option set ([`format_set`]).
+pub const SET_SCHEMA: u32 = 1;
+/// Most options in one set.
+pub const SET_OPTIONS_LIMIT: usize = 100;
+
+/// The colours options get when none is given, in order, then again from the start.
+pub const CHIP_PALETTE: [[u8; 3]; 8] = [
+    [0x3B, 0x82, 0xF6],
+    [0x10, 0xB9, 0x81],
+    [0xF5, 0x9E, 0x0B],
+    [0xEF, 0x44, 0x44],
+    [0x8B, 0x5C, 0xF6],
+    [0x06, 0xB6, 0xD4],
+    [0xEC, 0x48, 0x99],
+    [0x64, 0x74, 0x8B],
+];
+
+/// One option of a chips cell.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ChipOption {
+    pub label: String,
+    pub color: [u8; 3],
+}
+
+/// The workbook-scope defined name an option set is kept in. Its value is a string constant, so
+/// it survives a save by any spreadsheet program, as the names GridCraft keeps its own data in do.
+pub fn set_name(set: &str) -> String {
+    format!("_tf_chips_{set}")
+}
+
+/// The set id a defined name holds, if it is one of ours.
+pub fn set_id_of(name: &str) -> Option<&str> {
+    name.strip_prefix("_tf_chips_").filter(|id| valid_set_id(id))
+}
+
+/// The stored form of a set: `1;Label|rrggbb;Label|rrggbb`.
+pub fn format_set(options: &[ChipOption]) -> String {
+    let mut out = SET_SCHEMA.to_string();
+    for o in options.iter().take(SET_OPTIONS_LIMIT) {
+        let [r, g, b] = o.color;
+        out.push_str(&format!(";{}|{r:02x}{g:02x}{b:02x}", o.label.trim()));
+    }
+    out
+}
+
+/// Reads [`format_set`]'s form. `None` for another schema or text that is not a set; options
+/// with a bad label or colour are left out rather than failing the whole set.
+pub fn parse_set(text: &str) -> Option<Vec<ChipOption>> {
+    let mut parts = text.split(';');
+    if parts.next()?.trim().parse::<u32>().ok()? != SET_SCHEMA {
+        return None;
+    }
+    let mut out: Vec<ChipOption> = Vec::new();
+    for part in parts.take(SET_OPTIONS_LIMIT) {
+        let Some((label, hex)) = part.rsplit_once('|') else { continue };
+        let label = label.trim();
+        if !valid_chip_label(label) || out.iter().any(|o| o.label == label) {
+            continue;
+        }
+        let Some(color) = parse_hex(hex.trim()) else { continue };
+        out.push(ChipOption { label: label.to_string(), color });
+    }
+    Some(out)
+}
+
+/// `rrggbb` (with or without `#`) as a colour.
+pub fn parse_hex(hex: &str) -> Option<[u8; 3]> {
+    let h = hex.strip_prefix('#').unwrap_or(hex);
+    if h.len() != 6 || !h.is_ascii() {
+        return None;
+    }
+    let byte = |i: usize| h.get(i..i + 2).and_then(|x| u8::from_str_radix(x, 16).ok());
+    Some([byte(0)?, byte(2)?, byte(4)?])
+}
+
+/// A defined name's formula text (`"1;Red|ef4444"`, quotes doubled inside) as the string it holds.
+pub fn string_constant(formula: &str) -> Option<String> {
+    let t = formula.trim().strip_prefix('=').unwrap_or(formula.trim()).trim();
+    let inner = t.strip_prefix('"')?.strip_suffix('"')?;
+    // A lone quote inside means it was not one string constant.
+    let unescaped = inner.replace("\"\"", "\u{0}");
+    (!unescaped.contains('"')).then(|| unescaped.replace('\u{0}', "\""))
 }
 
 #[cfg(test)]
@@ -266,5 +351,36 @@ mod tests {
         assert!(valid_chip_label("In review"));
         assert!(!valid_chip_label("a,b"));
         assert!(!valid_chip_label("  "));
+    }
+
+    #[test]
+    fn sets_round_trip_and_skip_what_is_broken() {
+        let options =
+            vec![ChipOption { label: "Red".into(), color: [0xEF, 0x44, 0x44] }, ChipOption { label: "In review".into(), color: [0, 0x80, 0xFF] }];
+        let text = format_set(&options);
+        assert_eq!(text, "1;Red|ef4444;In review|0080ff");
+        assert_eq!(parse_set(&text), Some(options));
+        assert_eq!(parse_set("1"), Some(vec![]));
+        assert_eq!(parse_set("2;Red|ef4444"), None);
+        assert_eq!(parse_set("Red|ef4444"), None);
+        assert_eq!(parse_set(""), None);
+        // A bad colour, a repeated label, a label with a separator and a part without a colour are left out.
+        let kept = parse_set("1;Red|ef4444;Red|000000;Bad|zzzzzz;a,b|000000;NoColour;Blue|#3b82f6").unwrap();
+        assert_eq!(kept.iter().map(|o| o.label.as_str()).collect::<Vec<_>>(), ["Red", "Blue"]);
+        assert_eq!(parse_hex("\u{e9}\u{e9}\u{e9}"), None);
+    }
+
+    #[test]
+    fn set_names_and_string_constants() {
+        assert_eq!(set_name("status"), "_tf_chips_status");
+        assert_eq!(set_id_of("_tf_chips_status"), Some("status"));
+        assert_eq!(set_id_of("_tf_chips_"), None);
+        assert_eq!(set_id_of("Sales"), None);
+        assert_eq!(string_constant("\"1;Red|ef4444\"").as_deref(), Some("1;Red|ef4444"));
+        assert_eq!(string_constant("=\"1\"").as_deref(), Some("1"));
+        assert_eq!(string_constant("Sheet1!$A$1"), None);
+        assert_eq!(string_constant("\"a\"&\"b\""), None);
+        assert_eq!(string_constant("\""), None);
+        assert!(!valid_chip_label("a;b") && !valid_chip_label("a|b") && !valid_chip_label("a\"b"));
     }
 }

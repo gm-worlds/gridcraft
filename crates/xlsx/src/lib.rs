@@ -28,6 +28,7 @@ mod passthrough;
 mod pivot;
 mod python_part;
 mod read;
+mod rich_text;
 mod richdata;
 mod sheet_read;
 mod sheet_write;

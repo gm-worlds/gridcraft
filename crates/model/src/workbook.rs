@@ -195,6 +195,10 @@ pub struct PhoneticString {
     pub props: Option<PhoneticProps>,
 }
 
+fn rich_is_empty(rich: &Arc<crate::rich::RichStrings>) -> bool {
+    rich.is_empty()
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Workbook {
     pub sheets: Vec<Arc<Sheet>>,
@@ -237,6 +241,10 @@ pub struct Workbook {
     /// which holds unmodelled parts), so it is saved to JSON as well as to XLSX.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub phonetics: Vec<PhoneticString>,
+    /// Character formatting inside cell texts (rich text), by text: see [`crate::rich`]. Shared,
+    /// so an undo snapshot of a workbook with many formatted texts copies a pointer.
+    #[serde(default, skip_serializing_if = "rich_is_empty")]
+    pub rich: Arc<crate::rich::RichStrings>,
     /// VBA project (`xl/vbaProject.bin`) carried through unchanged. GridCraft does not run
     /// macros; the blob is preserved so that saving a macro-enabled workbook never destroys the
     /// macros it arrived with. base64 in JSON. `None` = the workbook has no macros. Shared, so a
@@ -363,6 +371,7 @@ impl Workbook {
             custom_lists: vec![],
             cell_styles: vec![],
             phonetics: vec![],
+            rich: Arc::default(),
             vba_project: None,
             csv_delimiter: None,
             macros: crate::macros::Macros::default(),
