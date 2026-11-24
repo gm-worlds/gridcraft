@@ -42,7 +42,8 @@ pub(super) fn keyboard(app: &mut SheetApp, ctx: &egui::Context, resp: &egui::Res
     // Alt shortcuts type their character too on Windows and Linux (Alt+= sends Text("=")): once
     // a shortcut ran, that text must not start an edit over what it just did.
     let mut shortcut_ran = false;
-    for ev in events {
+    let mut events = events.into_iter();
+    while let Some(ev) = events.next() {
         match ev {
             egui::Event::Copy => {
                 app.copy_to_clipboard(ctx, "edit.copy");
@@ -58,7 +59,10 @@ pub(super) fn keyboard(app: &mut SheetApp, ctx: &egui::Context, resp: &egui::Res
             // insert text at, so a middle click on a cell is deliberately not a paste.
             egui::Event::MiddleClickPaste { .. } => {}
             egui::Event::Text(_) if shortcut_pressed || shortcut_ran => {}
-            egui::Event::Text(text) if text.chars().all(|c| !c.is_control()) && !text.is_empty() => {
+            egui::Event::Text(mut text) if text.chars().all(|c| !c.is_control()) && !text.is_empty() => {
+                // The rest of what was typed in this frame belongs to the same edit: at a low
+                // frame rate several keys arrive together, and the editor only sees the next frame's.
+                text.push_str(&typed_ahead(events));
                 app.begin_edit(Some(text), false);
                 if let Some(ed) = app.editor.as_mut() {
                     ed.caret = ed.text.chars().count();
@@ -154,6 +158,46 @@ pub(super) fn keyboard(app: &mut SheetApp, ctx: &egui::Context, resp: &egui::Res
             _ => {}
         }
     }
+}
+
+/// The text typed after the key that starts an edit, in the same frame: every following text
+/// event, up to the first key that is not part of typing (Enter, Tab, an arrow, Backspace, a
+/// shortcut). Key events of the letters themselves are skipped.
+pub(super) fn typed_ahead(rest: impl Iterator<Item = egui::Event>) -> String {
+    use egui::Key;
+    let mut out = String::new();
+    for ev in rest {
+        match ev {
+            egui::Event::Text(t) if !t.is_empty() && t.chars().all(|c| !c.is_control()) => out.push_str(&t),
+            egui::Event::Key { key, pressed: true, modifiers: m, .. }
+                if m.command
+                    || m.ctrl
+                    || m.alt
+                    || matches!(
+                        key,
+                        Key::Enter
+                            | Key::Tab
+                            | Key::Escape
+                            | Key::Backspace
+                            | Key::Delete
+                            | Key::ArrowLeft
+                            | Key::ArrowRight
+                            | Key::ArrowUp
+                            | Key::ArrowDown
+                            | Key::Home
+                            | Key::End
+                            | Key::PageUp
+                            | Key::PageDown
+                            | Key::F2
+                    ) =>
+            {
+                break;
+            }
+            egui::Event::Text(_) | egui::Event::Paste(_) | egui::Event::Cut | egui::Event::Copy => break,
+            _ => {}
+        }
+    }
+    out
 }
 
 /// This frame's input events, without those the focused form control took.

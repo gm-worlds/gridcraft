@@ -486,3 +486,20 @@ fn kept_sheet_geometry_and_cf_statistics_follow_every_change() {
     assert!(!Arc::ptr_eq(&kept(&app).0, &ri));
     check_cf(&mut app);
 }
+
+#[test]
+fn text_typed_in_the_frame_that_starts_an_edit_is_kept() {
+    use egui::{Event, Key, Modifiers};
+    let key = |key, pressed| Event::Key { key, physical_key: None, pressed, repeat: false, modifiers: Modifiers::NONE };
+    let text = |t: &str| Event::Text(t.to_string());
+    // "ello" after the "H" that started the edit, with the letters' own key events between.
+    let typed = vec![key(Key::E, true), text("e"), key(Key::E, false), key(Key::L, true), text("l"), text("l"), key(Key::O, true), text("o")];
+    assert_eq!(keyboard::typed_ahead(typed.into_iter()), "ello");
+    // Enter ends the typing: what follows is another cell's.
+    assert_eq!(keyboard::typed_ahead(vec![text("a"), key(Key::Enter, true), text("b")].into_iter()), "a");
+    // A shortcut ends it too.
+    let cmd_b = Event::Key { key: Key::B, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::COMMAND };
+    assert_eq!(keyboard::typed_ahead(vec![text("a"), cmd_b, text("b")].into_iter()), "a");
+    assert_eq!(keyboard::typed_ahead(vec![Event::Paste("x".into()), text("b")].into_iter()), "");
+    assert_eq!(keyboard::typed_ahead(std::iter::empty()), "");
+}
