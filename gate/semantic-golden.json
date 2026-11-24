@@ -1,0 +1,830 @@
+{
+ "sheets": [
+  {
+   "name": "Budget",
+   "cells": {
+    "A1": {
+     "style": {
+      "bold": true,
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "A2": {
+     "style": {
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "A3": {
+     "style": {
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "A4": {
+     "style": {
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "A5": {
+     "style": {
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "A6": {
+     "type": "str",
+     "value": "Boxes",
+     "style": {
+      "fill": "fff2cc",
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "A7": {
+     "type": "str",
+     "value": "Dice",
+     "style": {
+      "fill": "fff2cc",
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "B1": {
+     "style": {
+      "bold": true,
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "B2": {
+     "type": "str",
+     "value": "Monthly Budget — October 2026",
+     "style": {
+      "numFmt": "\"$\"#,##0.00",
+      "color": "theme3",
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "B3": {
+     "style": {
+      "numFmt": "\"$\"#,##0.00",
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "B4": {
+     "type": "str",
+     "value": "Category",
+     "style": {
+      "numFmt": "\"$\"#,##0.00",
+      "bold": true,
+      "color": "theme3",
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "B5": {
+     "type": "str",
+     "value": "Rent",
+     "style": {
+      "numFmt": "\"$\"#,##0.00",
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "B6": {
+     "type": "n",
+     "value": 400,
+     "style": {
+      "numFmt": "\"$\"#,##0.00",
+      "fill": "fff2cc",
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "B7": {
+     "type": "n",
+     "value": 120,
+     "style": {
+      "numFmt": "\"$\"#,##0.00",
+      "fill": "fff2cc",
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "B8": {
+     "type": "str",
+     "value": "Transport"
+    },
+    "B9": {
+     "type": "str",
+     "value": "Internet & phone"
+    },
+    "B10": {
+     "type": "str",
+     "value": "Insurance"
+    },
+    "B11": {
+     "type": "str",
+     "value": "Dining out"
+    },
+    "B12": {
+     "type": "str",
+     "value": "Entertainment"
+    },
+    "B13": {
+     "type": "str",
+     "value": "Savings"
+    },
+    "B14": {
+     "type": "str",
+     "value": "Art supplies"
+    },
+    "B15": {
+     "type": "str",
+     "value": "Total",
+     "style": {
+      "bold": true,
+      "borders": {
+       "top": "thin",
+       "bottom": "double"
+      }
+     }
+    },
+    "C1": {
+     "style": {
+      "bold": true,
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "C2": {
+     "style": {
+      "numFmt": "\"$\"#,##0.00",
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "C3": {
+     "style": {
+      "numFmt": "\"$\"#,##0.00",
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "C4": {
+     "type": "str",
+     "value": "Budget",
+     "style": {
+      "numFmt": "\"$\"#,##0.00",
+      "bold": true,
+      "color": "theme3",
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "C5": {
+     "type": "n",
+     "value": 1850,
+     "style": {
+      "numFmt": "\"$\"#,##0.00",
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "C6": {
+     "type": "n",
+     "value": 450,
+     "style": {
+      "numFmt": "\"$\"#,##0.00",
+      "fill": "fff2cc",
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "C7": {
+     "type": "n",
+     "value": 90,
+     "style": {
+      "numFmt": "\"$\"#,##0.00",
+      "fill": "fff2cc",
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "C8": {
+     "type": "n",
+     "value": 180,
+     "style": {
+      "numFmt": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)"
+     }
+    },
+    "C9": {
+     "type": "n",
+     "value": 95,
+     "style": {
+      "numFmt": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)"
+     }
+    },
+    "C10": {
+     "type": "n",
+     "value": 210,
+     "style": {
+      "numFmt": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)"
+     }
+    },
+    "C11": {
+     "type": "n",
+     "value": 200,
+     "style": {
+      "numFmt": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)"
+     }
+    },
+    "C12": {
+     "type": "n",
+     "value": 120,
+     "style": {
+      "numFmt": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)"
+     }
+    },
+    "C13": {
+     "type": "n",
+     "value": 600,
+     "style": {
+      "numFmt": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)"
+     }
+    },
+    "C14": {
+     "type": "n",
+     "value": 150,
+     "style": {
+      "numFmt": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)"
+     }
+    },
+    "C15": {
+     "type": "n",
+     "value": 3945,
+     "formula": "SUM(C5:C14)",
+     "style": {
+      "numFmt": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)",
+      "bold": true,
+      "borders": {
+       "top": "thin",
+       "bottom": "double"
+      }
+     }
+    },
+    "D1": {
+     "style": {
+      "bold": true,
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "D2": {
+     "style": {
+      "numFmt": "\"$\"#,##0.00",
+      "color": "c00000",
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "D3": {
+     "style": {
+      "numFmt": "\"$\"#,##0.00",
+      "color": "c00000",
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "D4": {
+     "type": "str",
+     "value": "Actual",
+     "style": {
+      "numFmt": "\"$\"#,##0.00",
+      "bold": true,
+      "color": "c00000",
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "D5": {
+     "type": "n",
+     "value": 1850,
+     "style": {
+      "numFmt": "\"$\"#,##0.00",
+      "color": "c00000",
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "D6": {
+     "type": "n",
+     "value": 850,
+     "formula": "SUM(B6:C6)",
+     "style": {
+      "numFmt": "\"$\"#,##0.00",
+      "color": "c00000",
+      "fill": "fff2cc",
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "D7": {
+     "type": "n",
+     "value": 210,
+     "formula": "SUM(B7:C7)",
+     "style": {
+      "numFmt": "\"$\"#,##0.00",
+      "color": "c00000",
+      "fill": "fff2cc",
+      "borders": {
+       "left": "thin",
+       "right": "thin",
+       "top": "thin",
+       "bottom": "thin"
+      }
+     }
+    },
+    "D8": {
+     "type": "n",
+     "value": 203.5,
+     "style": {
+      "numFmt": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)"
+     }
+    },
+    "D9": {
+     "type": "n",
+     "value": 95,
+     "style": {
+      "numFmt": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)"
+     }
+    },
+    "D10": {
+     "type": "n",
+     "value": 210,
+     "style": {
+      "numFmt": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)"
+     }
+    },
+    "D11": {
+     "type": "n",
+     "value": 265.9,
+     "style": {
+      "numFmt": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)"
+     }
+    },
+    "D12": {
+     "type": "n",
+     "value": 88.25,
+     "style": {
+      "numFmt": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)"
+     }
+    },
+    "D13": {
+     "type": "n",
+     "value": 600,
+     "style": {
+      "numFmt": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)"
+     }
+    },
+    "D14": {
+     "type": "n",
+     "value": 172.4,
+     "style": {
+      "numFmt": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)"
+     }
+    },
+    "D15": {
+     "type": "n",
+     "value": 4545.049999999999,
+     "formula": "SUM(D5:D14)",
+     "style": {
+      "numFmt": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)",
+      "bold": true,
+      "borders": {
+       "top": "thin",
+       "bottom": "double"
+      }
+     }
+    },
+    "E4": {
+     "type": "str",
+     "value": "Difference",
+     "style": {
+      "bold": true,
+      "color": "theme3",
+      "borders": {
+       "bottom": "medium"
+      }
+     }
+    },
+    "E5": {
+     "type": "n",
+     "value": 0,
+     "formula": "C5-D5",
+     "style": {
+      "numFmt": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)"
+     }
+    },
+    "E6": {
+     "type": "n",
+     "value": -400,
+     "formula": "C6-D6",
+     "style": {
+      "numFmt": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)"
+     }
+    },
+    "E7": {
+     "type": "n",
+     "value": -120,
+     "formula": "C7-D7",
+     "style": {
+      "numFmt": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)"
+     }
+    },
+    "E8": {
+     "type": "n",
+     "value": -23.5,
+     "formula": "C8-D8",
+     "style": {
+      "numFmt": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)"
+     }
+    },
+    "E9": {
+     "type": "n",
+     "value": 0,
+     "formula": "C9-D9",
+     "style": {
+      "numFmt": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)"
+     }
+    },
+    "E10": {
+     "type": "n",
+     "value": 0,
+     "formula": "C10-D10",
+     "style": {
+      "numFmt": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)"
+     }
+    },
+    "E11": {
+     "type": "n",
+     "value": -65.89999999999998,
+     "formula": "C11-D11",
+     "style": {
+      "numFmt": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)"
+     }
+    },
+    "E12": {
+     "type": "n",
+     "value": 31.75,
+     "formula": "C12-D12",
+     "style": {
+      "numFmt": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)"
+     }
+    },
+    "E13": {
+     "type": "n",
+     "value": 0,
+     "formula": "C13-D13",
+     "style": {
+      "numFmt": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)"
+     }
+    },
+    "E14": {
+     "type": "n",
+     "value": -22.400000000000006,
+     "formula": "C14-D14",
+     "style": {
+      "numFmt": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)"
+     }
+    },
+    "E15": {
+     "type": "n",
+     "value": -600.05,
+     "formula": "SUM(E5:E14)",
+     "style": {
+      "numFmt": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)",
+      "bold": true,
+      "borders": {
+       "top": "thin",
+       "bottom": "double"
+      }
+     }
+    },
+    "F1": {
+     "type": "str",
+     "value": "Notes"
+    },
+    "F2": {
+     "type": "e",
+     "value": "#VALUE!",
+     "formula": "B2*1.21"
+    },
+    "F4": {
+     "type": "str",
+     "value": "% Used",
+     "style": {
+      "bold": true,
+      "color": "theme3",
+      "borders": {
+       "bottom": "medium"
+      }
+     }
+    },
+    "F5": {
+     "type": "n",
+     "value": 1,
+     "formula": "D5/C5",
+     "style": {
+      "numFmt": "#9"
+     }
+    },
+    "F6": {
+     "type": "n",
+     "value": 1.8888888888888888,
+     "formula": "D6/C6",
+     "style": {
+      "numFmt": "#9"
+     }
+    },
+    "F7": {
+     "type": "n",
+     "value": 2.3333333333333335,
+     "formula": "D7/C7",
+     "style": {
+      "numFmt": "#9"
+     }
+    },
+    "F8": {
+     "type": "n",
+     "value": 1.1305555555555555,
+     "formula": "D8/C8",
+     "style": {
+      "numFmt": "#9"
+     }
+    },
+    "F9": {
+     "type": "n",
+     "value": 1,
+     "formula": "D9/C9",
+     "style": {
+      "numFmt": "#9"
+     }
+    },
+    "F10": {
+     "type": "n",
+     "value": 1,
+     "formula": "D10/C10",
+     "style": {
+      "numFmt": "#9"
+     }
+    },
+    "F11": {
+     "type": "n",
+     "value": 1.3295,
+     "formula": "D11/C11",
+     "style": {
+      "numFmt": "#9"
+     }
+    },
+    "F12": {
+     "type": "n",
+     "value": 0.7354166666666667,
+     "formula": "D12/C12",
+     "style": {
+      "numFmt": "#9"
+     }
+    },
+    "F13": {
+     "type": "n",
+     "value": 1,
+     "formula": "D13/C13",
+     "style": {
+      "numFmt": "#9"
+     }
+    },
+    "F14": {
+     "type": "n",
+     "value": 1.1493333333333333,
+     "formula": "D14/C14",
+     "style": {
+      "numFmt": "#9"
+     }
+    },
+    "F15": {
+     "type": "n",
+     "value": 1.1521039290240809,
+     "formula": "D15/C15",
+     "style": {
+      "numFmt": "#9",
+      "bold": true,
+      "borders": {
+       "top": "thin",
+       "bottom": "double"
+      }
+     }
+    },
+    "H1": {
+     "type": "str",
+     "value": "Merged heading"
+    },
+    "H3": {
+     "type": "n",
+     "value": 2.1,
+     "formula": "10*VatRate"
+    },
+    "H8": {
+     "type": "n",
+     "value": 4,
+     "style": {
+      "numFmt": "0;\"tf-rating:5\";0;@"
+     }
+    },
+    "H9": {
+     "style": {
+      "numFmt": "0;\"tf-rating:5\";0;@"
+     }
+    },
+    "I3": {
+     "type": "b",
+     "value": true
+    },
+    "I8": {
+     "type": "str",
+     "value": "Doing, Done",
+     "style": {
+      "numFmt": "General;\"tf-chips:status\";General;@"
+     }
+    },
+    "I9": {
+     "style": {
+      "numFmt": "General;\"tf-chips:status\";General;@"
+     }
+    },
+    "J8": {
+     "type": "n",
+     "value": 46096,
+     "style": {
+      "numFmt": "yyyy-mm-dd;\"tf-date\";yyyy-mm-dd;@"
+     }
+    },
+    "K8": {
+     "type": "str",
+     "value": "Ship by Friday",
+     "rich": [
+      {
+       "start": 0,
+       "end": 4,
+       "bold": true
+      },
+      {
+       "start": 8,
+       "end": 14,
+       "italic": true,
+       "color": "c00000"
+      }
+     ]
+    },
+    "K9": {
+     "type": "str",
+     "value": "Plain text"
+    }
+   },
+   "merges": [
+    "H1:J1"
+   ],
+   "validations": [
+    {
+     "range": "H3:H5",
+     "type": "whole",
+     "formula1": "1",
+     "formula2": "10"
+    }
+   ]
+  }
+ ],
+ "names": [
+  {
+   "name": "_tf_chips_status",
+   "value": "\"1;To do|3b82f6;Doing|10b981;Done|f59e0b\"",
+   "hidden": true
+  },
+  {
+   "name": "VatRate",
+   "value": "0.21"
+  }
+ ]
+}

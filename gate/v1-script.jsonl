@@ -1,0 +1,10 @@
+# Edits every build since the first co-editing release can make: what an older build sends.
+cell.set={"cell":"H1","input":"From the previous build"}
+cell.set={"cell":"H2","input":"=B2*2"}
+range.setValues={"range":"H4","values":[["a",1],["b",2]]}
+home.bold={"range":"H1"}
+home.italic={"range":"H4:H5"}
+home.fillColor={"range":"H4:I5","color":"#DDEBF7"}
+home.fontColor={"range":"I4:I5","color":"#C00000"}
+home.numberFormat={"range":"I4:I5","format":"Currency"}
+cell.set={"cell":"H4","input":""}

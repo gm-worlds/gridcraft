@@ -5,7 +5,9 @@
 # `gridcraft-web-<version>-tf.<n>.zip` with its checksum as a release of this fork.
 # Taskforce installs only what is published here, so a release that the patches no
 # longer apply to, that fails a test, or that fails the browser gate never reaches it:
-# the run fails, nothing is published, and the last good build stays in use.
+# the run fails, nothing is published, and the last good build stays in use. What is
+# published is still not in use at once: Taskforce tries it for a day first (its worker,
+# apps/worker/src/tasks/office-apps.ts).
 #
 # Nothing is rebuilt when the pair (upstream version, tf/stack commit) already has a
 # release.
@@ -152,12 +154,29 @@ jobs:
         with:
           node-version: 22
 
+      # The build people have open when this one arrives: the newest one published here. The gate
+      # co-edits between the two, both ways. The first build ever has none to meet.
+      - name: Previous published build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          prev=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=30" -q '[.[] | select(.draft | not) | select(.tag_name | test("^v[0-9]+\\.[0-9]+\\.[0-9]+-tf\\.[0-9]+$"))][0].tag_name // ""')
+          if [ -z "$prev" ]; then echo "no earlier build"; exit 0; fi
+          mkdir -p prev/unpacked
+          gh release download "$prev" --repo "$GITHUB_REPOSITORY" --dir prev --pattern 'gridcraft-web-*.zip' --pattern SHA256SUMS.txt
+          (cd prev && grep 'gridcraft-web-.*\.zip$' SHA256SUMS.txt | sha256sum -c -)
+          unzip -q prev/gridcraft-web-*.zip -d prev/unpacked
+          dir=$(find prev/unpacked -maxdepth 2 -name index.html -print -quit | xargs dirname)
+          echo "PREV_DIST=$GITHUB_WORKSPACE/$dir" >> "$GITHUB_ENV"
+          echo "previous build: $prev"
+
       - name: Browser gate
         working-directory: ci/gate
         run: |
           set -euo pipefail
           npm ci
-          CHROME_PATH="$(command -v google-chrome)" node gate.mjs --dist "$GITHUB_WORKSPACE/dist/web" --cli "$GITHUB_WORKSPACE/src/target/release/gridcraft-cli"
+          CHROME_PATH="$(command -v google-chrome)" node gate.mjs --dist "$GITHUB_WORKSPACE/dist/web" --cli "$GITHUB_WORKSPACE/src/target/release/gridcraft-cli" ${PREV_DIST:+--prev-dist "$PREV_DIST"}
 
       - name: Package
         run: |
@@ -180,7 +199,7 @@ jobs:
             echo
             echo "upstream=$TAG stack=$STACK"
             echo
-            echo "Passed: co-editing engine tests, two-client fuzz (400 seeds), browser gate (bridge, protocol, browser and native parity)."
+            echo "Passed: co-editing engine tests, two-client fuzz (400 seeds), browser gate (bridge, protocol and capability contract, browser and native parity, workbook meaning against the golden, co-editing with the previous build both ways)."
           } > notes.md
           gh release create "$rel" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$rel" --notes-file notes.md \
             "out/gridcraft-web-$VERSION-tf.$GITHUB_RUN_NUMBER.zip" "out/gridcraft-cli-$VERSION-tf.$GITHUB_RUN_NUMBER-linux-x86_64" out/SHA256SUMS.txt

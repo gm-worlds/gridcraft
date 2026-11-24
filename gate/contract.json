@@ -1,0 +1,7 @@
+{
+  "collabProtocol": 1,
+  "collabCapabilities": ["effects", "snapshot", "hash"],
+  "hostProtocol": 1,
+  "capabilities": ["tf-host-1", "tf-save-now", "tf-read-only", "tf-goto", "tf-theme", "tf-theme-2", "tf-rich-toggle", "tf-kinds-1", "tf-rich-1"],
+  "effectFields": ["sheet", "cell", "row", "col", "input", "style", "rich", "chips"]
+}

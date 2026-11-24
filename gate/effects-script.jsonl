@@ -1,0 +1,17 @@
+# What a person does in a co-edited sheet, one of each kind of edit that travels as an effect.
+# Every field these produce must be in contract.json and in Taskforce's schema
+# (packages/shared/src/office-effects.ts): the server refuses an edit with a field it does not know.
+cell.set={"cell":"H1","input":"Co-edited"}
+cell.set={"cell":"H2","input":"=B2*2"}
+range.setValues={"range":"H4","values":[["a",1],["b",2]]}
+home.bold={"range":"H1"}
+home.fillColor={"range":"H4:I5","color":"#FFF2CC"}
+home.numberFormat={"range":"I4:I5","format":"Currency"}
+home.bold={"range":"7:7"}
+tf.kind.set={"range":"H8:H9","kind":"rating"}
+cell.set={"cell":"H8","input":"4"}
+tf.kind.set={"range":"I8:I9","kind":"chips","set":"status","options":["To do","Doing","Done"]}
+tf.chips.toggle={"cell":"I8","label":"Doing"}
+tf.kind.set={"range":"J8","kind":"date"}
+tf.date.set={"cell":"J8","date":"2026-03-15"}
+tf.rich.set={"cell":"K8","text":"Ship by Friday","runs":[{"start":0,"end":4,"bold":true}]}

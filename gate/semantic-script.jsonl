@@ -1,0 +1,25 @@
+# The script behind semantic-golden.json: one of each thing whose meaning in the file matters.
+# Run on `--sample budget`. Change it and the golden together (node gate.mjs … --update-golden).
+cell.set={"cell":"F1","input":"Notes"}
+cell.set={"cell":"F2","input":"=B2*1.21"}
+range.setValues={"range":"A6","values":[["Boxes",400,450,"=SUM(B6:C6)"],["Dice",120,90,"=SUM(B7:C7)"]]}
+home.bold={"range":"A1:D1"}
+home.fillColor={"range":"A6:D7","color":"#FFF2CC"}
+home.borders={"range":"A1:D7","preset":"all"}
+home.fontColor={"range":"D2:D7","color":"#C00000"}
+home.numberFormat={"range":"B2:D7","format":"Currency"}
+cell.set={"cell":"H1","input":"Merged heading"}
+home.mergeCells={"range":"H1:J1"}
+data.validation={"range":"H3:H5","type":"whole","operator":"between","formula1":"1","formula2":"10"}
+formulas.defineName={"name":"VatRate","refersTo":"0.21"}
+cell.set={"cell":"H3","input":"=10*VatRate"}
+cell.set={"cell":"I3","input":"true"}
+tf.kind.set={"range":"H8:H9","kind":"rating"}
+cell.set={"cell":"H8","input":"4"}
+tf.kind.set={"range":"I8:I9","kind":"chips","set":"status","options":["To do","Doing","Done"]}
+tf.chips.toggle={"cell":"I8","label":"Doing"}
+tf.chips.toggle={"cell":"I8","label":"Done"}
+tf.kind.set={"range":"J8","kind":"date"}
+tf.date.set={"cell":"J8","date":"2026-03-15"}
+tf.rich.set={"cell":"K8","text":"Ship by Friday","runs":[{"start":0,"end":4,"bold":true},{"start":8,"end":14,"italic":true,"color":"c00000"}]}
+cell.set={"cell":"K9","input":"Plain text"}
