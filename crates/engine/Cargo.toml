@@ -11,6 +11,7 @@ workspace = true
 [dependencies]
 gridcraft-core = { workspace = true }
 gridcraft-numfmt = { workspace = true }
+gridcraft-tf-ext = { workspace = true }
 gridcraft-formula = { workspace = true }
 gridcraft-functions = { workspace = true }
 gridcraft-model = { workspace = true }

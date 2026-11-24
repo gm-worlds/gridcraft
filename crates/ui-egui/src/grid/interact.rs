@@ -521,6 +521,7 @@ fn handle_press(app: &mut SheetApp, input: &InteractionInput<'_>) {
         if acts && wb.styles.get(sh.style_id(c)).num_fmt.as_str() == "checkbox" {
             let _ = app.run("cell.toggleCheckbox", json!({"cell": c.a1()}));
         }
+        let _ = acts && crate::tf::click(app, c, wb.styles.get(sh.style_id(c)).num_fmt.as_str(), &sh.value(c), p, geo.screen_cell_rect(sh, c), geo.z);
         // A click on a hyperlink's text follows it (like Excel); elsewhere in the cell selects.
         if let Some(h) = sh.hyperlinks.get(&c).cloned()
             && acts

@@ -265,7 +265,7 @@ fn paint_cell_decorations(q: &QuadrantPaint<'_>, c: CellRef, rect: Rect, lk: &Lo
         paint_checkbox(p, rect, z, v == Value::Bool(true));
         return true;
     }
-    false
+    crate::tf::paint(p, rect, z, lk.style.num_fmt.as_str(), &v, q.tokens.accent)
 }
 
 /// Most repeats of a fill character laid out in one cell.

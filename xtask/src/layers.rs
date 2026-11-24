@@ -28,6 +28,7 @@ impl Class {
 pub const TABLE: &[(&str, Class)] = &[
     ("core", Class::Layer(0)),
     ("numfmt", Class::Layer(0)),
+    ("tf-ext", Class::Layer(0)),
     ("pdf", Class::Layer(0)),
     // The confined launcher for helper processes; the Python worker and the apps use it.
     ("sandbox", Class::Layer(0)),

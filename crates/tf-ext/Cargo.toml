@@ -1,0 +1,11 @@
+[package]
+name = "gridcraft-tf-ext"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Taskforce cell kinds for GridCraft: the number-format markers and their value rules"
+
+[lints]
+workspace = true
+
+[dependencies]

@@ -24,6 +24,7 @@ pub mod slicer;
 pub mod solver;
 pub mod spelling;
 pub mod stash;
+pub mod tf;
 pub mod view;
 pub mod whatif;
 
@@ -183,6 +184,7 @@ pub fn command_specs() -> &'static [CommandSpec] {
         v.extend(slicer::specs());
         v.extend(whatif::specs());
         v.extend(forecast::specs());
+        v.extend(tf::specs());
         v.extend(analysis::specs());
         v.extend(print::specs());
         v

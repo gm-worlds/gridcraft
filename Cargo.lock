@@ -2109,6 +2109,7 @@ dependencies = [
  "gridcraft-model",
  "gridcraft-numfmt",
  "gridcraft-pdf",
+ "gridcraft-tf-ext",
  "gridcraft-xlsx",
  "image",
  "log",
@@ -2191,6 +2192,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "gridcraft-tf-ext"
+version = "0.19.1"
+
+[[package]]
 name = "gridcraft-ui-egui"
 version = "0.19.1"
 dependencies = [
@@ -2203,6 +2208,7 @@ dependencies = [
  "epaint_default_fonts",
  "gridcraft-chart",
  "gridcraft-engine",
+ "gridcraft-tf-ext",
  "gridcraft-xlsx",
  "image",
  "log",

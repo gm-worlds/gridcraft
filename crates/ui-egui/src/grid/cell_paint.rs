@@ -116,7 +116,7 @@ pub(super) fn display_text(
     }
     let code = st.num_fmt.as_str();
     // A checkbox cell draws TRUE/FALSE (and empty) as a box; other values show as General.
-    if code == "checkbox" && matches!(v, Value::Bool(_) | Value::Empty) {
+    if (code == "checkbox" && matches!(v, Value::Bool(_) | Value::Empty)) || crate::tf::draws(code, v) {
         return (String::new(), None, false, None);
     }
     if code == "General"
