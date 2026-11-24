@@ -214,6 +214,7 @@ pub(super) fn context_menu(app: &mut SheetApp, ui: &mut egui::Ui) {
                     }
                 }
             }
+            close |= crate::tf::menu::cell_items(app, ui);
         });
     });
     // A quick right-click presses and releases in one frame, and the menu's corner snaps to the

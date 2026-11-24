@@ -284,6 +284,7 @@ impl SheetApp {
     }
 
     pub fn cancel_edit(&mut self) {
+        crate::tf::rich_edit::cancelled();
         self.editor = None;
         self.session.mode = gridcraft_engine::Mode::Ready;
     }

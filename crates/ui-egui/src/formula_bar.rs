@@ -499,6 +499,7 @@ pub fn editor_widget(app: &mut SheetApp, ui: &mut egui::Ui, id: egui::Id, font: 
     let cell_text_color = if on_sheet { t.cell_text } else { t.text };
     let font2 = font.clone();
     let reading_order = cell_reading_order(app, ed.sheet, ed.cell);
+    let rich = crate::tf::rich_edit::for_layout(app, &ed);
     let mut layouter = move |ui: &egui::Ui, buf: &dyn egui::TextBuffer, wrap_width: f32| {
         let s = buf.as_str();
         let mut job = egui::text::LayoutJob {
@@ -518,6 +519,7 @@ pub fn editor_widget(app: &mut SheetApp, ui: &mut egui::Ui, id: egui::Id, font: 
             pos = b;
         }
         job.append(s.get(pos..).unwrap_or(""), 0.0, egui::TextFormat::simple(font2.clone(), cell_text_color));
+        crate::tf::rich_edit::restyle(rich.as_ref(), &mut job, s, font2.size, cell_text_color);
         job.wrap.max_width = if multiline { wrap_width } else { f32::INFINITY };
         ui.fonts_mut(|f| f.layout_job(job))
     };

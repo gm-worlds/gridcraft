@@ -11,7 +11,8 @@ pub const PROTOCOL: u32 = 1;
 
 /// What this build can do for a host, by name. The host opens a workbook read-only when the
 /// workbook uses a feature that is not in the list of the build it runs in.
-pub const CAPABILITIES: &[&str] = &["tf-host-1", "tf-save-now", "tf-read-only", "tf-goto", "tf-theme", tf_ext::CAPABILITY];
+pub const CAPABILITIES: &[&str] =
+    &["tf-host-1", "tf-save-now", "tf-read-only", "tf-goto", "tf-theme", "tf-theme-2", "tf-rich-toggle", tf_ext::CAPABILITY];
 
 /// Most cells looked at when listing what a workbook uses.
 const FEATURE_SCAN_LIMIT: usize = 2_000_000;

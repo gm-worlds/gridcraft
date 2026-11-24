@@ -60,7 +60,7 @@ fn format(font: &Font, size: f32, color: Color32, run: Option<&RichRun>) -> Text
 }
 
 /// One section per stretch of `text`: the formatted runs, and the plain text between them.
-fn sections(text: &str, runs: &[RichRun], font: &Font, size: f32, color: Color32) -> Vec<LayoutSection> {
+pub(crate) fn sections(text: &str, runs: &[RichRun], font: &Font, size: f32, color: Color32) -> Vec<LayoutSection> {
     let mut out = Vec::with_capacity(runs.len() * 2 + 1);
     let mut push = |from: usize, to: usize, run: Option<&RichRun>| {
         if from < to {

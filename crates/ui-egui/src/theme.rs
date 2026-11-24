@@ -212,8 +212,12 @@ impl Tokens {
         Tokens::palette(true)
     }
 
-    /// One palette for both modes: each colour is written once, with its light and dark values.
     fn palette(dark: bool) -> Tokens {
+        crate::tf::theme::themed(Tokens::base_palette(dark))
+    }
+
+    /// One palette for both modes: each colour is written once, with its light and dark values.
+    fn base_palette(dark: bool) -> Tokens {
         Tokens {
             dark,
             window: pick(dark, Color32::from_rgb(0xF3, 0xF3, 0xF3), Color32::from_rgb(0x29, 0x29, 0x29)),
@@ -352,6 +356,7 @@ pub fn apply(ctx: &egui::Context, dark: bool) {
         v.widgets.hovered.corner_radius = egui::CornerRadius::same(3);
         v.widgets.active.corner_radius = egui::CornerRadius::same(2);
         v.widgets.open.corner_radius = egui::CornerRadius::same(2);
+        crate::tf::theme::style(&mut v);
         v.window_corner_radius = egui::CornerRadius::same(10);
         v.menu_corner_radius = egui::CornerRadius::same(8);
         v.popup_shadow = egui::epaint::Shadow { offset: [0, 4], blur: 16, spread: 0, color: t.shadow };

@@ -14,7 +14,7 @@
 //!
 //! Methods: `tf.hello`, `tf.features`, `tf.goto {cell, sheet?}`, `tf.cellRect {cell}`,
 //! `tf.save {}` (the save the Save button does, without a key press), `tf.readOnly {on}`,
-//! `tf.theme {dark?}`; any other name is a control method (`cell.get`, `sheet.read`,
+//! `tf.theme {dark?, accent?, radius?}`, `tf.rich.toggle {prop}`; any other name is a control method (`cell.get`, `sheet.read`,
 //! `engine.execute`…, see `docs/control-protocol.md`).
 
 pub mod proto;
@@ -205,11 +205,49 @@ mod link {
                 Ok(json!({ "readOnly": on }))
             }
             "tf.theme" => {
+                use gridcraft_ui_egui::tf::theme;
                 if let Some(dark) = p.get("dark").and_then(Json::as_bool) {
                     app.ui.dark = dark;
                     app.ui.system_theme = false;
                 }
-                Ok(json!({ "dark": app.ui.dark }))
+                // `accent` and `radius`: a value sets it, `null` goes back to the app's own.
+                if let Some(accent) = p.get("accent") {
+                    let rgb = match accent {
+                        Json::Null => None,
+                        other => Some(other.as_str().and_then(gridcraft_engine::tf_ext::parse_hex).ok_or("`accent` must be \"rrggbb\"")?),
+                    };
+                    theme::set_accent(rgb);
+                }
+                if let Some(radius) = p.get("radius") {
+                    let points = match radius {
+                        Json::Null => None,
+                        other => Some(other.as_f64().filter(|r| r.is_finite() && *r >= 0.0).ok_or("`radius` must be a number of points")? as f32),
+                    };
+                    theme::set_radius(points);
+                }
+                gridcraft_ui_egui::theme::apply(ctx, app.ui.dark);
+                ctx.request_repaint();
+                let accent = theme::accent().map(|[r, g, b]| format!("{r:02x}{g:02x}{b:02x}"));
+                Ok(json!({ "dark": app.ui.dark, "accent": accent, "radius": theme::radius() }))
+            }
+            // Bold, italic, underline or strikethrough from the host's own toolbar: on the text
+            // selected in the cell being edited, or else on the selected cells.
+            "tf.rich.toggle" => {
+                use gridcraft_ui_egui::tf::rich_edit::{self, Prop};
+                let name = p.get("prop").and_then(Json::as_str).unwrap_or_default();
+                let prop = Prop::parse(name).ok_or("`prop` must be bold, italic, underline or strike")?;
+                if rich_edit::toggle(app, prop) {
+                    ctx.request_repaint();
+                    return Ok(json!({ "on": "text" }));
+                }
+                let command = match prop {
+                    Prop::Bold => "home.bold",
+                    Prop::Italic => "home.italic",
+                    Prop::Underline => "home.underline",
+                    Prop::Strike => "home.strikethrough",
+                };
+                app.run(command, json!({}))?;
+                Ok(json!({ "on": "cells" }))
             }
             other if other.starts_with("tf.") && gridcraft_engine::find_command(other).is_none() => Err(format!("unknown method `{other}`")),
             other => match control::handle(app, ctx, other, p) {

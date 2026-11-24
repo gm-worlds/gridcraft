@@ -2,6 +2,10 @@
 //! click on it does. The grid calls [`draws`], [`paint`] and [`click`] from one line each; all the
 //! rules live here.
 
+pub mod menu;
+pub mod rich_edit;
+pub mod theme;
+
 use std::cell::{Cell, RefCell};
 
 use egui::{Color32, FontId, Painter, Pos2, Rect, Shape, pos2, vec2};
@@ -178,6 +182,7 @@ fn paint_chips(p: &Painter, rect: Rect, z: f32, text: &str, options: &[tf::ChipO
 pub fn popup(app: &mut SheetApp, ui: &mut egui::Ui, geo: &crate::grid::Geo) {
     chips_popup(app, ui, geo);
     date_popup(app, ui, geo);
+    menu::options_dialog(app, ui.ctx());
 }
 
 /// The calendar day of a date serial, or `None` when it is not a day in the calendar.

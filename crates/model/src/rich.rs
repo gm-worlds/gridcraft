@@ -136,6 +136,56 @@ pub fn patch_runs(text: &str, runs: &[RichRun], start: u32, end: u32, patch: &Ri
     normalize_runs(text, out)
 }
 
+/// The runs of a text after it was edited from `old` to `new` (typing, deleting, pasting over a
+/// selection): what lies before the change stays, what lies after moves with it, and what was
+/// typed takes the formatting of the character before it (of the character after it at the very
+/// start of the text), as a word processor does.
+pub fn edit_runs(old: &str, new: &str, runs: &[RichRun]) -> Vec<RichRun> {
+    if old == new {
+        return normalize_runs(new, runs.to_vec());
+    }
+    let units = |n: usize, text: &str, from_end: bool| -> u32 {
+        let chars: Box<dyn Iterator<Item = char>> = if from_end { Box::new(text.chars().rev()) } else { Box::new(text.chars()) };
+        chars.take(n).map(|c| c.len_utf16() as u32).sum()
+    };
+    let prefix_chars = old.chars().zip(new.chars()).take_while(|(a, b)| a == b).count();
+    let room = old.chars().count().min(new.chars().count()) - prefix_chars;
+    let suffix_chars = old.chars().rev().zip(new.chars().rev()).take(room).take_while(|(a, b)| a == b).count();
+    // In UTF-16 units: the unchanged start `p`, the end of what was replaced in `old`, and the
+    // length of what replaced it.
+    let p = units(prefix_chars, old, false);
+    let gone_end = utf16_len(old).saturating_sub(units(suffix_chars, old, true));
+    let inserted = utf16_len(new).saturating_sub(units(suffix_chars, new, true)).saturating_sub(p);
+    let typed_end = p.saturating_add(inserted);
+    let after = |x: u32| x.saturating_sub(gone_end).saturating_add(typed_end);
+    let pure_insert = gone_end == p;
+    let moved = runs
+        .iter()
+        .map(|r| {
+            let start = if r.start < p || (r.start == p && (p == 0 || !pure_insert)) {
+                r.start.min(p)
+            } else if r.start >= gone_end {
+                after(r.start)
+            } else {
+                typed_end
+            };
+            let end = if r.end < p {
+                r.end
+            } else if r.end > gone_end || (r.end == gone_end && !pure_insert && r.start >= p) {
+                after(r.end)
+            } else if r.end == p && r.start >= p {
+                // An empty run at the change (its text was replaced): nothing left of it.
+                start
+            } else {
+                // The change is inside the run or right at its end: what was typed joins it.
+                typed_end.max(if r.end >= gone_end { after(r.end) } else { 0 })
+            };
+            RichRun { start, end, ..r.clone() }
+        })
+        .collect();
+    normalize_runs(new, moved)
+}
+
 /// Whether every character of `start..end` has the property `has` picks (what a toggle button
 /// shows as on). An empty stretch has nothing.
 pub fn all_of(text: &str, runs: &[RichRun], start: u32, end: u32, has: impl Fn(&RichRun) -> bool) -> bool {
@@ -296,6 +346,42 @@ mod tests {
         assert!(all_of(text, &b, 3, 8, |r| r.italic));
         assert!(!all_of(text, &b, 2, 8, |r| r.italic));
         assert!(!all_of(text, &b, 4, 4, |r| r.bold));
+    }
+
+    #[test]
+    fn runs_follow_edits_of_the_text() {
+        let bold = |start, end| vec![run(start, end)];
+        // "Hello world", "world" bold.
+        let old = "Hello world";
+        let runs = bold(6, 11);
+        // Typing before the run moves it; typing right before it does not join it.
+        assert_eq!(edit_runs(old, "Oh Hello world", &runs), bold(9, 14));
+        assert_eq!(edit_runs(old, "Hello big world", &runs), bold(10, 15));
+        // Typing inside or at the end of the run joins it.
+        assert_eq!(edit_runs(old, "Hello wooorld", &runs), bold(6, 13));
+        assert_eq!(edit_runs(old, "Hello worlds!", &runs), bold(6, 13));
+        // Deleting inside shrinks it; deleting all of it removes it.
+        assert_eq!(edit_runs(old, "Hello wld", &runs), bold(6, 9));
+        assert_eq!(edit_runs(old, "Hello ", &runs), vec![]);
+        assert_eq!(edit_runs(old, "Hello", &runs), vec![]);
+        // Deleting before it moves it back.
+        assert_eq!(edit_runs(old, "Ho world", &runs), bold(3, 8));
+        // Replacing a selection across its start: the typed text takes the left side's (plain) look.
+        assert_eq!(edit_runs(old, "HelXXrld", &runs), bold(5, 8));
+        // A run at the very start: typing at position 0 joins it (nothing to its left).
+        assert_eq!(edit_runs("Bold tail", "A Bold tail", &bold(0, 4)), bold(0, 6));
+        // Replacing everything keeps nothing; the same text keeps everything.
+        assert_eq!(edit_runs(old, "Other", &runs), vec![]);
+        assert_eq!(edit_runs(old, old, &runs), runs);
+        // Characters outside the BMP count two units.
+        assert_eq!(edit_runs("a😀b", "a😀😀b", &bold(3, 4)), bold(5, 6));
+        assert_eq!(edit_runs("", "new", &[]), vec![]);
+        // Never out of range, whatever the edit.
+        for new in ["", "x", "Hello world and much more text", "world", "Hello"] {
+            for r in edit_runs(old, new, &[run(0, 5), run(6, 11)]) {
+                assert!(r.start < r.end && r.end <= utf16_len(new), "{new}: {r:?}");
+            }
+        }
     }
 
     #[test]
