@@ -16,6 +16,11 @@
 /// The feature name a build announces when it draws and edits these kinds.
 pub const CAPABILITY: &str = "tf-kinds-1";
 
+/// What a build announces when it keeps formatting inside a text (rich text runs). A build
+/// without it writes such a text back plain, so a host opens a workbook that has any read-only
+/// there.
+pub const RICH_CAPABILITY: &str = "tf-rich-1";
+
 /// Highest star count a rating cell can have.
 pub const RATING_MAX_LIMIT: u8 = 10;
 /// Star count when none is given.

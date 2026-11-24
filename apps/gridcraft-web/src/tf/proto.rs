@@ -12,7 +12,7 @@ pub const PROTOCOL: u32 = 1;
 /// What this build can do for a host, by name. The host opens a workbook read-only when the
 /// workbook uses a feature that is not in the list of the build it runs in.
 pub const CAPABILITIES: &[&str] =
-    &["tf-host-1", "tf-save-now", "tf-read-only", "tf-goto", "tf-theme", "tf-theme-2", "tf-rich-toggle", tf_ext::CAPABILITY];
+    &["tf-host-1", "tf-save-now", "tf-read-only", "tf-goto", "tf-theme", "tf-theme-2", "tf-rich-toggle", tf_ext::CAPABILITY, tf_ext::RICH_CAPABILITY];
 
 /// Most cells looked at when listing what a workbook uses.
 const FEATURE_SCAN_LIMIT: usize = 2_000_000;
@@ -50,8 +50,10 @@ impl Request {
 /// this build does not know (from a newer build: such a workbook stays read-only here).
 pub fn features(session: &Session) -> Json {
     let mut uses_kinds = false;
+    let mut uses_rich = false;
     let mut unknown: Vec<String> = Vec::new();
     if let Some(d) = session.active() {
+        uses_rich = !d.wb.rich.is_empty();
         // Kinds are marked on styles, so the style table is all there is to look at: a workbook
         // has few styles however many cells it has.
         for code in d.wb.styles.iter().map(|(_, s)| s.num_fmt.as_str().to_string()).take(FEATURE_SCAN_LIMIT) {
@@ -67,6 +69,9 @@ pub fn features(session: &Session) -> Json {
     let mut features: Vec<&str> = Vec::new();
     if uses_kinds {
         features.push(tf_ext::CAPABILITY);
+    }
+    if uses_rich {
+        features.push(tf_ext::RICH_CAPABILITY);
     }
     json!({ "features": features, "unknown": unknown })
 }
@@ -139,7 +144,7 @@ mod tests {
     fn hello_names_every_capability_once() {
         let h = hello("0.19.1+tf.9");
         let caps: Vec<&str> = h["capabilities"].as_array().unwrap().iter().map(|c| c.as_str().unwrap()).collect();
-        assert!(caps.contains(&"tf-kinds-1") && caps.contains(&"tf-read-only") && caps.contains(&"tf-save-now"));
+        assert!(caps.contains(&"tf-kinds-1") && caps.contains(&"tf-rich-1") && caps.contains(&"tf-read-only") && caps.contains(&"tf-save-now"));
         let mut sorted = caps.clone();
         sorted.sort_unstable();
         sorted.dedup();
@@ -156,6 +161,11 @@ mod tests {
         assert_eq!(features(&s), json!({ "features": ["tf-kinds-1"], "unknown": [] }));
         s.execute("home.formatCells", json!({ "range": "B1", "style": { "num_fmt": "0;\"tf-slider:3\";0;@" } })).unwrap();
         assert_eq!(features(&s)["unknown"], json!(["tf-slider:3"]));
+        // Formatting inside a text is a feature of its own: it is not marked on a number format.
+        s.execute("tf.rich.set", json!({ "cell": "C1", "text": "Ship by Friday", "runs": [{ "start": 0, "end": 4, "bold": true }] })).unwrap();
+        assert_eq!(features(&s)["features"], json!(["tf-kinds-1", "tf-rich-1"]));
+        s.execute("tf.rich.set", json!({ "cell": "C1", "text": "Ship by Friday", "runs": [] })).unwrap();
+        assert_eq!(features(&s)["features"], json!(["tf-kinds-1"]));
     }
 
     #[test]

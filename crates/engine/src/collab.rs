@@ -86,6 +86,10 @@ pub struct Effect {
     /// effect as an ordinary cell effect with nothing in it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rich: Option<RichEffect>,
+    /// A changed option set of multi-select cells ([`chips`]). It belongs to the workbook; `cell`
+    /// is only where it is anchored.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub chips: Option<ChipsEffect>,
 }
 
 /// The formatting of one text: every formatted stretch of it (none = plain again).
@@ -94,6 +98,9 @@ pub struct RichEffect {
     pub text: String,
     pub runs: Vec<gridcraft_model::RichRun>,
 }
+
+mod chips;
+pub use chips::ChipsEffect;
 
 /// The last-writer-wins key of a text's formatting: by text, wherever the effect is anchored.
 fn rich_key(text: &str) -> String {
@@ -227,7 +234,10 @@ impl Collab {
         if out.rich.as_ref().is_some_and(|r| self.pending.contains_key(&rich_key(&r.text))) {
             out.rich = None;
         }
-        (out.input.is_some() || !out.style.is_empty() || out.rich.is_some()).then_some(out)
+        if out.chips.as_ref().is_some_and(|c| self.pending.contains_key(&chips::key(&c.set))) {
+            out.chips = None;
+        }
+        (out.input.is_some() || !out.style.is_empty() || out.rich.is_some() || out.chips.is_some()).then_some(out)
     }
 }
 
@@ -251,6 +261,9 @@ pub fn keys_of(e: &Effect) -> Vec<String> {
     }
     if let Some(r) = &e.rich {
         k.push(rich_key(&r.text));
+    }
+    if let Some(c) = &e.chips {
+        k.push(chips::key(&c.set));
     }
     k
 }
@@ -394,6 +407,9 @@ fn commit_effects(d: &mut DocState, effects: &[Effect]) -> Result<()> {
                         }
                         // Normalized by the table; one that is full keeps what it has.
                         Arc::make_mut(&mut cx.wb.rich).set(&r.text, r.runs.clone());
+                    }
+                    if let Some(c) = &e.chips {
+                        chips::apply(&mut cx.wb, c).map_err(bad)?;
                     }
                     cx.touch(si, at);
                 }
@@ -553,6 +569,8 @@ fn workbook_rest(wb: &Workbook) -> Workbook {
     w.props = Default::default();
     // Replicated as effects of its own ([`rich_effects`]).
     w.rich = Default::default();
+    // And so are the option sets of multi-select cells ([`chips::effects`]).
+    chips::without(&mut w);
     w
 }
 
@@ -623,7 +641,8 @@ pub fn diff(before: &Workbook, after: &Workbook) -> std::result::Result<Vec<Effe
     if wa != wb {
         return Err(format!("workbook {}", first_difference(&wa, &wb)));
     }
-    let mut out = Vec::new();
+    // Before the cells: a cell never points at a set that is not there yet.
+    let mut out = chips::effects(before, after)?;
     for (sa, sb) in before.sheets.iter().zip(&after.sheets) {
         if Arc::ptr_eq(sa, sb) {
             continue;
@@ -735,6 +754,13 @@ pub fn content_hash(wb: &Workbook) -> u64 {
                 h.write(style.as_bytes());
             }
         }
+    }
+    // Option sets of multi-select cells, where there are any (a workbook without one hashes as
+    // it did before they were replicated).
+    for (id, value) in chips::hashed(wb) {
+        h.write(b"chips");
+        h.write(id.as_bytes());
+        h.write(value.as_bytes());
     }
     h.0
 }
@@ -893,6 +919,53 @@ mod tests {
         assert_eq!(input(&a, "Q1"), "later");
         relay(&mut a, &mut b);
         assert_eq!(hash(&a), hash(&b));
+    }
+
+    #[test]
+    fn option_sets_of_multi_select_cells_replicate_and_converge() {
+        let (mut a, mut b) = (session(), session());
+        let plain = hash(&a);
+        // One command: the set, the cells that use it. It used to be refused ("workbook names").
+        a.execute("tf.kind.set", json!({"range": "H2:H3", "kind": "chips", "set": "status", "options": ["To do", "Doing", "Done"]})).unwrap();
+        assert_ne!(hash(&a), plain);
+        assert!(relay(&mut a, &mut b) >= 1);
+        let options =
+            |s: &Session| crate::cmd::tf::chip_options(&s.doc().unwrap().wb, "status").map(|o| o.into_iter().map(|o| o.label).collect::<Vec<_>>());
+        assert_eq!(options(&b), Some(vec!["To do".to_string(), "Doing".to_string(), "Done".to_string()]));
+        assert_eq!(hash(&a), hash(&b));
+        assert!(b.doc().unwrap().wb.names.iter().all(|n| n.name != "_tf_chips_status" || n.hidden));
+        // The other person changes the set; both keep the later one.
+        b.execute("tf.chips.defineSet", json!({"set": "status", "options": ["Open", "Closed"]})).unwrap();
+        assert!(relay(&mut b, &mut a) >= 1);
+        assert_eq!(options(&a), Some(vec!["Open".to_string(), "Closed".to_string()]));
+        assert_eq!(hash(&a), hash(&b));
+        // Undo puts the earlier set back for both.
+        b.execute("edit.undo", json!({})).unwrap();
+        relay(&mut b, &mut a);
+        assert_eq!(options(&a).map(|o| o.len()), Some(3));
+        assert_eq!(hash(&a), hash(&b));
+        // Any other name is still not co-edited.
+        let err = a.execute("formulas.defineName", json!({"name": "Rate", "refersTo": "0.07"})).unwrap_err();
+        assert!(err.to_string().contains(NOT_YET), "{err}");
+        // On the wire it is a cell effect with one more field.
+        let sheet = a.doc().unwrap().wb.sheets[0].name.clone();
+        let set = |set: &str, value: Option<&str>| Effect {
+            sheet: sheet.clone(),
+            cell: Some("A1".into()),
+            chips: Some(ChipsEffect { set: set.into(), value: value.map(str::to_string) }),
+            ..Default::default()
+        };
+        let wire = serde_json::to_value(set("status", Some("1;A|ff0000"))).unwrap();
+        assert_eq!(wire, json!({"sheet": sheet, "cell": "A1", "chips": {"set": "status", "value": "1;A|ff0000"}}));
+        // A hostile effect cannot put anything but a set into the name, or a set anywhere else.
+        let long = format!("1;{}|ff0000", "x".repeat(20_000));
+        for e in [set("status", Some("=HYPERLINK(\"x\")")), set("status", Some(&long)), set("no such id!", None), set("status", Some("2;A|ff0000"))] {
+            assert!(a.collab_apply(&[e]).is_err());
+        }
+        assert_eq!(options(&a).map(|o| o.len()), Some(3));
+        // Removing a set travels too.
+        a.collab_apply(&[set("status", None)]).unwrap();
+        assert_eq!(options(&a), None);
     }
 
     #[test]
